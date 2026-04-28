@@ -13,14 +13,21 @@ export async function main(ns) {
   ];
   const START_CITY = "Sector-12";
   const CORP_NAME = "Wayne Enterprises";
-  const MIN_EMPLOYEES_PER_CITY = 6;
-  const CITY_READY_EMPLOYEES = 18;
-  const CITY_READY_WAREHOUSE_SIZE = 500;
+  const EMPLOYEE_TARGET_PER_CITY = 40;
+  const CITY_READY_EMPLOYEES = 40;
+  const CITY_READY_WAREHOUSE_SIZE = 10000;
+  const EXPANSION_FLOOR_EMPLOYEES = 18;
+  const EXPANSION_FLOOR_WAREHOUSE_SIZE = 1000;
   const OFFICE_UPGRADE_STEP = 6;
   const OFFICE_UPGRADE_CASH_BUFFER = 5e9;
   const WAREHOUSE_UPGRADE_CASH_BUFFER = 2e9;
+  const PRE_EXPANSION_OFFICE_CASH_BUFFER = 0;
+  const PRE_EXPANSION_WAREHOUSE_CASH_BUFFER = 0;
   const CITY_EXPANSION_CASH_BUFFER = 5e9;
   const CORP_CREATION_COST = 150e9;
+  const LOG_EVERY_LOOPS = 6;
+
+  let loopCount = 0;
 
   const MATERIAL_RESERVE = 0.85;
   const MATERIAL_SIZE = {
@@ -30,44 +37,64 @@ export async function main(ns) {
     "Real Estate": 0.005,
   };
 
-  class Division {
-    constructor(
-      Name,
-      Industry,
-      Outputs,
-      Hardware,
-      Robots,
-      AICores,
-      RealEstate,
-    ) {
-      const sum = Hardware + Robots + AICores + RealEstate;
-      this.Name = Name;
-      this.Industry = Industry;
-      this.Outputs = Outputs;
-      this.HardwarePercent = Hardware / sum;
-      this.RobotsPercent = Robots / sum;
-      this.AICoresPercent = AICores / sum;
-      this.RealEstatePercent = RealEstate / sum;
+  const INDUSTRY_BONUS_WEIGHTS = {
+    Agriculture: [4, 5, 5, 14],
+    Tobacco: [2, 2, 1, 3],
+  };
+
+  function getDivisionRuntimeState(divisionName) {
+    const info = CORP.getDivision(divisionName);
+    let outputs = [];
+    try {
+      const industryData = CORP.getIndustryData(info.type);
+      outputs = industryData.producedMaterials || [];
+    } catch (_) {
+      outputs = info.producedMaterials || [];
     }
+    const [hardware, robots, aiCores, realEstate] = INDUSTRY_BONUS_WEIGHTS[
+      info.type
+    ] || [2, 2, 1, 3];
+    const sum = hardware + robots + aiCores + realEstate;
+
+    return {
+      Name: divisionName,
+      Industry: info.type,
+      Outputs: outputs,
+      HardwarePercent: hardware / sum,
+      RobotsPercent: robots / sum,
+      AICoresPercent: aiCores / sum,
+      RealEstatePercent: realEstate / sum,
+    };
   }
 
-  // Add more divisions to this array as needed
-  const DIVISIONS = [
-    new Division("Aggie", "Agriculture", ["Food", "Plants"], 4, 5, 5, 14),
-    new Division("Marlboro1", "Tobacco", [], 2, 2, 1, 3),
-    new Division("Marlboro2", "Tobacco", [], 2, 2, 1, 3),
-    new Division("Marlboro3", "Tobacco", [], 2, 2, 1, 3),
-  ];
+  function getManagedDivisions() {
+    return CORP.getCorporation().divisions.map(getDivisionRuntimeState);
+  }
 
   // --- Setup ---
 
+  function shouldLogThisLoop() {
+    return loopCount % LOG_EVERY_LOOPS === 0;
+  }
+
   async function waitForCorpCreationFunds() {
+    if (CORP.hasCorporation()) {
+      ns.print(
+        "[Startup] Corporation already exists, skipping creation-funds wait.",
+      );
+      return;
+    }
+
     let alertedReady = false;
     while (true) {
       if (!alertedReady && ns.getPlayer().money >= CORP_CREATION_COST) {
+        ns.print("[Startup] Funds threshold reached for corporation creation.");
         alertedReady = true;
       }
       if (ns.getPlayer().money >= CORP_CREATION_COST) return;
+      ns.print(
+        `[Startup] Waiting for corp creation funds: ${ns.formatNumber(ns.getPlayer().money)} / ${ns.formatNumber(CORP_CREATION_COST)}`,
+      );
       await ns.sleep(10000);
     }
   }
@@ -79,35 +106,65 @@ export async function main(ns) {
     }
   }
 
-  function createDivisionIfMissing(division) {
-    const corp = CORP.getCorporation();
-    if (corp.divisions.includes(division.Name)) return true;
+  async function buySmartSupplyOnceAtStartup() {
+    if (CORP.hasUnlock("Smart Supply")) return;
 
-    try {
-      CORP.expandIndustry(division.Industry, division.Name);
-      ns.tprint(`Division '${division.Name}' created.`);
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  async function waitAndBuySmartSupply() {
     while (!CORP.hasUnlock("Smart Supply")) {
       const unlockCost = CORP.getUnlockUpgradeCost("Smart Supply");
-      if (CORP.getCorporation().funds >= unlockCost) {
+      const funds = CORP.getCorporation().funds;
+      if (funds >= unlockCost) {
         CORP.unlockUpgrade("Smart Supply");
         ns.tprint("Purchased unlock: Smart Supply");
+        ns.print("[Corp] Purchased unlock: Smart Supply.");
         return;
       }
+
+      ns.print(
+        `[Corp] Waiting for Smart Supply funds: ${ns.formatNumber(funds)} / ${ns.formatNumber(unlockCost)}`,
+      );
       await ns.sleep(10000);
     }
   }
 
   function getTargetEmployees(funds) {
-    if (funds >= 1e12) return 30;
-    if (funds >= 2e11) return 24;
-    return CITY_READY_EMPLOYEES;
+    return EMPLOYEE_TARGET_PER_CITY;
+  }
+
+  function isDivisionFullyExpanded(division) {
+    return CORP.getDivision(division.Name).cities.length >= CITIES.length;
+  }
+
+  function getCityTargetsForPhase(division, funds) {
+    if (!isDivisionFullyExpanded(division)) {
+      return {
+        employees: EXPANSION_FLOOR_EMPLOYEES,
+        warehouseSize: EXPANSION_FLOOR_WAREHOUSE_SIZE,
+      };
+    }
+
+    return {
+      employees: getTargetEmployees(funds),
+      warehouseSize: CITY_READY_WAREHOUSE_SIZE,
+    };
+  }
+
+  function manageResearch(division) {
+    const order = ["Hi-Tech R&D Laboratory", "Market-TA.I", "Market-TA.II"];
+    for (const research of order) {
+      if (CORP.hasResearched(division.Name, research)) continue;
+
+      const points = CORP.getDivision(division.Name).researchPoints;
+      const cost = CORP.getResearchCost(division.Name, research);
+      if (points >= cost) {
+        CORP.research(division.Name, research);
+        ns.print(`[${division.Name}] Researched: ${research}`);
+      } else if (shouldLogThisLoop()) {
+        ns.print(
+          `[${division.Name}] Waiting on research points for ${research}: ${ns.formatNumber(points)} / ${ns.formatNumber(cost)}`,
+        );
+      }
+      break;
+    }
   }
 
   function getMaterialTargets(division, city) {
@@ -178,6 +235,17 @@ export async function main(ns) {
     return true;
   }
 
+  function isCityAboveExpansionFloor(division, city) {
+    const office = CORP.getOffice(division.Name, city);
+    if (office.numEmployees < EXPANSION_FLOOR_EMPLOYEES) return false;
+    if (!CORP.hasWarehouse(division.Name, city)) return false;
+
+    const warehouse = CORP.getWarehouse(division.Name, city);
+    if (warehouse.size < EXPANSION_FLOOR_WAREHOUSE_SIZE) return false;
+
+    return true;
+  }
+
   function setEvenJobAssignments(divisionName, city, employeeCount) {
     const allJobs = [
       "Operations",
@@ -201,10 +269,36 @@ export async function main(ns) {
     }
   }
 
+  function getCityWeaknessScore(division, city) {
+    const funds = CORP.getCorporation().funds;
+    const targets = getCityTargetsForPhase(division, funds);
+    const office = CORP.getOffice(division.Name, city);
+    const empRatio = Math.min(1, office.numEmployees / targets.employees);
+
+    if (!CORP.hasWarehouse(division.Name, city)) {
+      return 3 - empRatio;
+    }
+
+    const warehouse = CORP.getWarehouse(division.Name, city);
+    const whRatio = Math.min(1, warehouse.size / targets.warehouseSize);
+
+    // Higher score means weaker city and should be prioritized first.
+    return 1 - empRatio + (1 - whRatio);
+  }
+
   function manageOfficeAndWarehouse(division, city) {
     let office = CORP.getOffice(division.Name, city);
     const funds = CORP.getCorporation().funds;
-    const desiredEmployees = getTargetEmployees(funds);
+    const targets = getCityTargetsForPhase(division, funds);
+    const desiredEmployees = targets.employees;
+    const desiredWarehouseSize = targets.warehouseSize;
+    const fullyExpanded = isDivisionFullyExpanded(division);
+    const officeBuffer = fullyExpanded
+      ? OFFICE_UPGRADE_CASH_BUFFER
+      : PRE_EXPANSION_OFFICE_CASH_BUFFER;
+    const warehouseBuffer = fullyExpanded
+      ? WAREHOUSE_UPGRADE_CASH_BUFFER
+      : PRE_EXPANSION_WAREHOUSE_CASH_BUFFER;
 
     if (office.size < desiredEmployees) {
       const growBy = Math.min(
@@ -212,7 +306,7 @@ export async function main(ns) {
         desiredEmployees - office.size,
       );
       const cost = CORP.getOfficeSizeUpgradeCost(division.Name, city, growBy);
-      if (funds > cost + OFFICE_UPGRADE_CASH_BUFFER) {
+      if (funds > cost + officeBuffer) {
         CORP.upgradeOfficeSize(division.Name, city, growBy);
         office = CORP.getOffice(division.Name, city);
       }
@@ -230,31 +324,22 @@ export async function main(ns) {
       : null;
     if (!warehouse) {
       const whCost = CORP.getConstants().warehouseInitialCost;
-      if (
-        CORP.getCorporation().funds >
-        whCost + WAREHOUSE_UPGRADE_CASH_BUFFER
-      ) {
+      if (CORP.getCorporation().funds > whCost + warehouseBuffer) {
         CORP.purchaseWarehouse(division.Name, city);
       }
       return;
     }
 
-    if (warehouse.sizeUsed / warehouse.size > 0.9) {
+    if (fullyExpanded && warehouse.sizeUsed / warehouse.size > 0.9) {
       const upCost = CORP.getUpgradeWarehouseCost(division.Name, city, 1);
-      if (
-        CORP.getCorporation().funds >
-        upCost + WAREHOUSE_UPGRADE_CASH_BUFFER
-      ) {
+      if (CORP.getCorporation().funds > upCost + warehouseBuffer) {
         CORP.upgradeWarehouse(division.Name, city, 1);
       }
     }
 
-    if (warehouse.size < CITY_READY_WAREHOUSE_SIZE) {
+    if (warehouse.size < desiredWarehouseSize) {
       const upCost = CORP.getUpgradeWarehouseCost(division.Name, city, 1);
-      if (
-        CORP.getCorporation().funds >
-        upCost + WAREHOUSE_UPGRADE_CASH_BUFFER
-      ) {
+      if (CORP.getCorporation().funds > upCost + warehouseBuffer) {
         CORP.upgradeWarehouse(division.Name, city, 1);
       }
     }
@@ -263,12 +348,31 @@ export async function main(ns) {
   function setupSellingAndSmartSupply(division, city) {
     if (!CORP.hasWarehouse(division.Name, city)) return;
 
+    const hasMarketTA1 = CORP.hasResearched(division.Name, "Market-TA.I");
+    const hasMarketTA2 = CORP.hasResearched(division.Name, "Market-TA.II");
+
     if (CORP.hasUnlock("Smart Supply")) {
+      const wh = CORP.getWarehouse(division.Name, city);
+      if (!wh.smartSupplyEnabled) {
+        ns.print(`[${division.Name}] Enabling Smart Supply in ${city}.`);
+      }
       CORP.setSmartSupply(division.Name, city, true);
     }
 
     for (const material of division.Outputs) {
       CORP.sellMaterial(division.Name, city, material, "MAX", "MP");
+      if (hasMarketTA1) {
+        CORP.setMaterialMarketTA1(division.Name, city, material, true);
+      }
+      if (hasMarketTA2) {
+        CORP.setMaterialMarketTA2(division.Name, city, material, true);
+      }
+    }
+
+    if (shouldLogThisLoop() && division.Outputs.length > 0) {
+      ns.print(
+        `[${division.Name}] ${city} sell configured for: ${division.Outputs.join(", ")}`,
+      );
     }
 
     const divInfo = CORP.getDivision(division.Name);
@@ -276,6 +380,12 @@ export async function main(ns) {
       for (const productName of divInfo.products) {
         try {
           CORP.sellProduct(division.Name, city, productName, "MAX", "MP", true);
+          if (hasMarketTA1) {
+            CORP.setProductMarketTA1(division.Name, productName, true);
+          }
+          if (hasMarketTA2) {
+            CORP.setProductMarketTA2(division.Name, productName, true);
+          }
         } catch (_) {}
       }
     }
@@ -287,13 +397,32 @@ export async function main(ns) {
     if (!nextCity) return;
 
     for (const city of divInfo.cities) {
-      if (!isCityOperational(division, city)) return;
+      if (!isCityAboveExpansionFloor(division, city)) {
+        if (shouldLogThisLoop()) {
+          const office = CORP.getOffice(division.Name, city);
+          const whSize = CORP.hasWarehouse(division.Name, city)
+            ? CORP.getWarehouse(division.Name, city).size
+            : 0;
+          ns.print(
+            `[${division.Name}] Expansion blocked until ${city} reaches floor | emp ${office.numEmployees}/${EXPANSION_FLOOR_EMPLOYEES} | wh ${ns.formatNumber(whSize, 3)}/${EXPANSION_FLOOR_WAREHOUSE_SIZE}`,
+          );
+        }
+        return;
+      }
     }
 
     const funds = CORP.getCorporation().funds;
     const expandCost = CORP.getConstants().officeInitialCost;
     const warehouseCost = CORP.getConstants().warehouseInitialCost;
-    if (funds < expandCost + warehouseCost + CITY_EXPANSION_CASH_BUFFER) return;
+    if (funds < expandCost + warehouseCost) {
+      if (shouldLogThisLoop()) {
+        const need = expandCost + warehouseCost;
+        ns.print(
+          `[${division.Name}] Expansion blocked by funds: ${ns.formatNumber(funds)} / ${ns.formatNumber(need)} needed.`,
+        );
+      }
+      return;
+    }
 
     CORP.expandCity(division.Name, nextCity);
     CORP.purchaseWarehouse(division.Name, nextCity);
@@ -316,9 +445,7 @@ export async function main(ns) {
       (storage * division.RealEstatePercent) / MATERIAL_SIZE["Real Estate"],
     );
 
-    ns.print(
-      `City: ${city} || Size: ${storage}\n Hardware: ${hardwareAmt}\n Robots: ${robotsAmt}\n AI Cores: ${aiCoresAmt}\n Real Estate: ${realEstateAmt}`,
-    );
+    ns.print(`City: ${city} || Size: ${ns.formatNumber(storage, 3)}`);
 
     await buyMaterials(division.Name, city, "Hardware", hardwareAmt);
     await buyMaterials(division.Name, city, "Robots", robotsAmt);
@@ -358,13 +485,22 @@ export async function main(ns) {
       const randomNum = Math.floor(Math.random() * 100);
       const productName = `${division.Name}-${randomNum}`;
       if (products.includes(productName)) continue;
-      CORP.makeProduct(
-        division.Name,
-        city,
-        productName,
-        designInvestment,
-        marketingInvestment,
-      );
+      try {
+        CORP.makeProduct(
+          division.Name,
+          city,
+          productName,
+          designInvestment,
+          marketingInvestment,
+        );
+      } catch (_) {
+        if (shouldLogThisLoop()) {
+          ns.print(
+            `[${division.Name}] Not enough funds to start new product yet.`,
+          );
+        }
+        break;
+      }
       products = CORP.getDivision(division.Name).products;
     }
 
@@ -388,15 +524,17 @@ export async function main(ns) {
 
   await waitForCorpCreationFunds();
   createCorporation();
+  await buySmartSupplyOnceAtStartup();
 
-  for (const div of DIVISIONS) {
-    createDivisionIfMissing(div);
+  let divisions = getManagedDivisions();
+  if (divisions.length === 0) {
+    ns.print(
+      "[Startup] No divisions found yet. Create one manually and this script will start managing it.",
+    );
   }
 
-  await waitAndBuySmartSupply();
-
-  for (const div of DIVISIONS) {
-    if (!createDivisionIfMissing(div)) continue;
+  for (const div of divisions) {
+    manageResearch(div);
 
     const divInfo = CORP.getDivision(div.Name);
     if (!divInfo.cities.includes(START_CITY)) {
@@ -410,13 +548,31 @@ export async function main(ns) {
   }
 
   while (true) {
-    for (const div of DIVISIONS) {
-      if (!createDivisionIfMissing(div)) continue;
+    loopCount += 1;
+    divisions = getManagedDivisions();
+
+    if (shouldLogThisLoop()) {
+      ns.print(
+        `[Loop ${loopCount}] Active. Corp funds: ${ns.formatNumber(CORP.getCorporation().funds)}`,
+      );
+      if (divisions.length === 0) {
+        ns.print("[Loop] No divisions to manage yet.");
+      }
+    }
+
+    for (const div of divisions) {
+      manageResearch(div);
 
       const divInfo = CORP.getDivision(div.Name);
-      const cities = divInfo.cities.sort((a, b) =>
-        a === START_CITY ? -1 : b === START_CITY ? 1 : 0,
+      const cities = [...divInfo.cities].sort(
+        (a, b) => getCityWeaknessScore(div, b) - getCityWeaknessScore(div, a),
       );
+
+      if (shouldLogThisLoop() && cities.length > 0) {
+        const weakest = cities[0];
+        ns.print(`[${div.Name}] Prioritizing weakest city: ${weakest}`);
+      }
+
       for (const city of cities) {
         setupSellingAndSmartSupply(div, city);
         manageOfficeAndWarehouse(div, city);
