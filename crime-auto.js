@@ -1,20 +1,10 @@
 /** @param {NS} ns **/
 export async function main(ns) {
   ns.disableLog("ALL");
+  if (ns.gang.inGang()) return;
+  await ns.sleep(1000);
 
-  // Optional: force a specific crime for everyone
-  const fixedCrime = ns.args[0] || null;
-
-  const crimes = [
-    "Homicide",
-    "Traffick Arms",
-    "Bond Forgery",
-    "Deal Drugs",
-    "Larceny",
-    "Mug",
-    "Rob Store",
-    "Shoplift",
-  ];
+  const crimes = ["Homicide", "Traffick Arms", "Mug", "Rob Store", "Shoplift"];
 
   function chooseBestCrime() {
     let bestCrime = crimes[0];
@@ -29,7 +19,7 @@ export async function main(ns) {
 
   while (true) {
     // 1) Which crime should the main body do?
-    const mainCrime = fixedCrime || chooseBestCrime();
+    const mainCrime = chooseBestCrime();
 
     const crimeTime = ns.singularity.commitCrime(mainCrime, false);
     ns.print(

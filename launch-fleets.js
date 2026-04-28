@@ -10,7 +10,7 @@ import {
 export async function main(ns) {
   ns.disableLog("ALL");
   const useHacknet = ns.args[0] === "1";
-  var homeServ = "home";
+  var homeServ = ns.singularity.getCurrentServer();
   var attackDelay = 10; // time (ms) between attacks
 
   var virus = "Curtain/pirate.js";

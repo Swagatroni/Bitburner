@@ -15,6 +15,8 @@ export async function main(ns) {
         { name: "gang-management.js", threads: 1, args: [] },
         { name: "bladeburner.js", threads: 1, args: [] },
         { name: "sleeves.js", threads: 1, args: [] },
+        { name: "watchtower.js", threads: 1, args: [] },
+        { name: "custom-stats.js", threads: 1, args: [] },
       ],
     },
     {
@@ -33,7 +35,7 @@ export async function main(ns) {
       { name: "purchaseSpareServer.js", threads: 1, args: [] },
       { name: "purchaseSpareServer.js", threads: 1, args: [] },
       { name: "train.js", threads: 1, args: [] },
-      // { name: "hacknet.js", threads: 1, args: [] },
+      { name: "hacknet.js", threads: 1, args: [] },
       // { name: "diamond-hands.js", threads: 1, args: [] },
       // { name: "aps.js", threads: 1, args: [] },
     ],
@@ -64,7 +66,7 @@ export async function main(ns) {
   while (true) {
     if (torPurchased(ns, money())) done.torPurchased = true;
     if (handleDarkWeb(ns, money())) done.darkWeb = true;
-    if (handleBackdoors(ns)) done.backdoors = true;
+    if (await handleBackdoors(ns)) done.backdoors = true;
 
     // Start "Home" scripts
     if (!done.homeScripts && HOME.ram) {
@@ -112,8 +114,10 @@ async function runscript(ns, script, server) {
   const filesToCopy = [
     script.name,
     "Curtain/utils.js",
+    "Curtain/pirate.js",
     "Curtain/find-targets.js",
     "factionAugs.js",
+    "diamond-hands.js",
   ];
 
   const copied = await ns.scp(filesToCopy, server.name, "home");

@@ -18,6 +18,7 @@ export async function main(ns) {
     maxLogsByScript: {
       "gang-management.js": 2,
       "bladeburner.js": 3,
+      // "diamond-hands.js": 2,
       // "some-script.js": 5,
     },
     showInactive: false, // Show scripts with no recent output
@@ -41,7 +42,8 @@ export async function main(ns) {
         s.filename !== "GOD-EYE.js" &&
         s.filename !== "launch-fleets.js" &&
         s.filename !== "hacknet.js" &&
-        s.filename !== "sleeves.js",
+        s.filename !== "sleeves.js" &&
+        s.filename !== "buyGangAugs.js",
     );
     if (activeScripts.length === 0) {
       ns.print("═══════════════════════════════════════════════════");

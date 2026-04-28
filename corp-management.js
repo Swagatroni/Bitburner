@@ -14,9 +14,12 @@ export async function main(ns) {
   const START_CITY = "Sector-12";
   const CORP_NAME = "Wayne Enterprises";
   const MIN_EMPLOYEES_PER_CITY = 6;
+  const CITY_READY_EMPLOYEES = 18;
+  const CITY_READY_WAREHOUSE_SIZE = 500;
   const OFFICE_UPGRADE_STEP = 6;
   const OFFICE_UPGRADE_CASH_BUFFER = 5e9;
   const WAREHOUSE_UPGRADE_CASH_BUFFER = 2e9;
+  const CITY_EXPANSION_CASH_BUFFER = 5e9;
   const CORP_CREATION_COST = 150e9;
 
   const MATERIAL_RESERVE = 0.85;
@@ -51,6 +54,9 @@ export async function main(ns) {
   // Add more divisions to this array as needed
   const DIVISIONS = [
     new Division("Aggie", "Agriculture", ["Food", "Plants"], 4, 5, 5, 14),
+    new Division("Marlboro1", "Tobacco", [], 2, 2, 1, 3),
+    new Division("Marlboro2", "Tobacco", [], 2, 2, 1, 3),
+    new Division("Marlboro3", "Tobacco", [], 2, 2, 1, 3),
   ];
 
   // --- Setup ---
@@ -59,7 +65,6 @@ export async function main(ns) {
     let alertedReady = false;
     while (true) {
       if (!alertedReady && ns.getPlayer().money >= CORP_CREATION_COST) {
-        ns.alert(`Now creating corp: '${CORP_NAME}'.`);
         alertedReady = true;
       }
       if (ns.getPlayer().money >= CORP_CREATION_COST) return;
@@ -76,9 +81,14 @@ export async function main(ns) {
 
   function createDivisionIfMissing(division) {
     const corp = CORP.getCorporation();
-    if (!corp.divisions.includes(division.Name)) {
+    if (corp.divisions.includes(division.Name)) return true;
+
+    try {
       CORP.expandIndustry(division.Industry, division.Name);
       ns.tprint(`Division '${division.Name}' created.`);
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -97,9 +107,75 @@ export async function main(ns) {
   function getTargetEmployees(funds) {
     if (funds >= 1e12) return 30;
     if (funds >= 2e11) return 24;
-    if (funds >= 5e10) return 18;
-    if (funds >= 1e10) return 12;
-    return MIN_EMPLOYEES_PER_CITY;
+    return CITY_READY_EMPLOYEES;
+  }
+
+  function getMaterialTargets(division, city) {
+    const warehouseSize = CORP.getWarehouse(division.Name, city).size;
+    const storage = warehouseSize * MATERIAL_RESERVE;
+    return {
+      hardware: Math.floor(
+        (storage * division.HardwarePercent) / MATERIAL_SIZE.Hardware,
+      ),
+      robots: Math.floor(
+        (storage * division.RobotsPercent) / MATERIAL_SIZE.Robots,
+      ),
+      aiCores: Math.floor(
+        (storage * division.AICoresPercent) / MATERIAL_SIZE["AI Cores"],
+      ),
+      realEstate: Math.floor(
+        (storage * division.RealEstatePercent) / MATERIAL_SIZE["Real Estate"],
+      ),
+    };
+  }
+
+  function isSellingConfigured(division, city) {
+    for (const material of division.Outputs) {
+      const mat = CORP.getMaterial(division.Name, city, material);
+      if (String(mat.desiredSellAmount) !== "MAX") return false;
+      if (String(mat.desiredSellPrice) !== "MP") return false;
+    }
+    return true;
+  }
+
+  function isSmartSupplyEnabled(division, city) {
+    if (!CORP.hasUnlock("Smart Supply")) return false;
+    try {
+      const wh = CORP.getWarehouse(division.Name, city);
+      return Boolean(wh.smartSupplyEnabled);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function areBonusMaterialsAllocated(division, city) {
+    const targets = getMaterialTargets(division, city);
+    const hw = CORP.getMaterial(division.Name, city, "Hardware").stored;
+    const rb = CORP.getMaterial(division.Name, city, "Robots").stored;
+    const ai = CORP.getMaterial(division.Name, city, "AI Cores").stored;
+    const re = CORP.getMaterial(division.Name, city, "Real Estate").stored;
+
+    // Allow small drift because storage target shifts as warehouse size changes.
+    return (
+      hw >= targets.hardware * 0.85 &&
+      rb >= targets.robots * 0.85 &&
+      ai >= targets.aiCores * 0.85 &&
+      re >= targets.realEstate * 0.85
+    );
+  }
+
+  function isCityOperational(division, city) {
+    const office = CORP.getOffice(division.Name, city);
+    if (office.numEmployees < CITY_READY_EMPLOYEES) return false;
+    if (!CORP.hasWarehouse(division.Name, city)) return false;
+
+    const warehouse = CORP.getWarehouse(division.Name, city);
+    if (warehouse.size < CITY_READY_WAREHOUSE_SIZE) return false;
+    if (!isSmartSupplyEnabled(division, city)) return false;
+    if (!isSellingConfigured(division, city)) return false;
+    if (!areBonusMaterialsAllocated(division, city)) return false;
+
+    return true;
   }
 
   function setEvenJobAssignments(divisionName, city, employeeCount) {
@@ -153,7 +229,7 @@ export async function main(ns) {
       ? CORP.getWarehouse(division.Name, city)
       : null;
     if (!warehouse) {
-      const whCost = CORP.getPurchaseWarehouseCost();
+      const whCost = CORP.getConstants().warehouseInitialCost;
       if (
         CORP.getCorporation().funds >
         whCost + WAREHOUSE_UPGRADE_CASH_BUFFER
@@ -164,6 +240,16 @@ export async function main(ns) {
     }
 
     if (warehouse.sizeUsed / warehouse.size > 0.9) {
+      const upCost = CORP.getUpgradeWarehouseCost(division.Name, city, 1);
+      if (
+        CORP.getCorporation().funds >
+        upCost + WAREHOUSE_UPGRADE_CASH_BUFFER
+      ) {
+        CORP.upgradeWarehouse(division.Name, city, 1);
+      }
+    }
+
+    if (warehouse.size < CITY_READY_WAREHOUSE_SIZE) {
       const upCost = CORP.getUpgradeWarehouseCost(division.Name, city, 1);
       if (
         CORP.getCorporation().funds >
@@ -184,6 +270,34 @@ export async function main(ns) {
     for (const material of division.Outputs) {
       CORP.sellMaterial(division.Name, city, material, "MAX", "MP");
     }
+
+    const divInfo = CORP.getDivision(division.Name);
+    if (divInfo.makesProducts) {
+      for (const productName of divInfo.products) {
+        try {
+          CORP.sellProduct(division.Name, city, productName, "MAX", "MP", true);
+        } catch (_) {}
+      }
+    }
+  }
+
+  function tryExpandIfOperational(division) {
+    const divInfo = CORP.getDivision(division.Name);
+    const nextCity = CITIES.find((city) => !divInfo.cities.includes(city));
+    if (!nextCity) return;
+
+    for (const city of divInfo.cities) {
+      if (!isCityOperational(division, city)) return;
+    }
+
+    const funds = CORP.getCorporation().funds;
+    const expandCost = CORP.getConstants().officeInitialCost;
+    const warehouseCost = CORP.getConstants().warehouseInitialCost;
+    if (funds < expandCost + warehouseCost + CITY_EXPANSION_CASH_BUFFER) return;
+
+    CORP.expandCity(division.Name, nextCity);
+    CORP.purchaseWarehouse(division.Name, nextCity);
+    ns.print(`Expanded ${division.Name} to ${nextCity}.`);
   }
 
   async function materialManagement(division, city) {
@@ -282,6 +396,8 @@ export async function main(ns) {
   await waitAndBuySmartSupply();
 
   for (const div of DIVISIONS) {
+    if (!createDivisionIfMissing(div)) continue;
+
     const divInfo = CORP.getDivision(div.Name);
     if (!divInfo.cities.includes(START_CITY)) {
       CORP.expandCity(div.Name, START_CITY);
@@ -295,6 +411,8 @@ export async function main(ns) {
 
   while (true) {
     for (const div of DIVISIONS) {
+      if (!createDivisionIfMissing(div)) continue;
+
       const divInfo = CORP.getDivision(div.Name);
       const cities = divInfo.cities.sort((a, b) =>
         a === START_CITY ? -1 : b === START_CITY ? 1 : 0,
@@ -307,6 +425,7 @@ export async function main(ns) {
         }
       }
       productManagement(div);
+      tryExpandIfOperational(div);
     }
     await ns.sleep(10000);
   }

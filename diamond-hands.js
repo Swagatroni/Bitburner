@@ -89,7 +89,7 @@ export async function main(ns) {
   }
 
   function yolo(stocks) {
-    const riskThresh = 10; // 20 * fees;
+    const riskThresh = 10 ; // 20 * fees;
     for (const stock of stocks) {
       const money = ns.getPlayer().money;
       if (stock.forecast > 0.5) {

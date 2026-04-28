@@ -11,7 +11,7 @@ export async function main(ns) {
   while (!ns.serverExists(server)) {
     ns.print(`Purchasing server: ${server} with 2GB RAM`);
     ns.purchaseServer(server, 2);
-    await ns.sleep(1000);
+    await ns.sleep(500);
   }
 
   if (ns.getServerMaxRam(server) >= scriptRam * 1.2) {
@@ -52,7 +52,7 @@ export async function main(ns) {
       } else ns.print(`Failed to upgrade ${server} to ${desiredRam} RAM.`);
     }
 
-    await ns.sleep(3000);
+    await ns.sleep(500);
   }
 
   ns.tprint(

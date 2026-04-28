@@ -17,35 +17,32 @@ export async function main(ns) {
     ns.singularity.travelToCity(CITY);
   }
 
-  while (true) {
-    const player = ns.getPlayer().skills;
-    const skills = {
-      str: player.strength >= TARGET,
-      def: player.defense >= TARGET,
-      dex: player.dexterity >= TARGET,
-      agi: player.agility >= TARGET,
-    };
+  if (ns.bladeburner.inBladeburner()) {
+    ns.exec("crime-auto.js", "home");
+    return;
+  }
 
-    for (const skill in skills) {
-      while (!skills[skill]) {
-        ns.singularity.gymWorkout(GYM, skill, false);
-        await ns.sleep(1000);
-        const current = ns.getPlayer().skills[SKILL_MAP[skill]];
-        skills[skill] = current >= TARGET;
-      }
+  const player = ns.getPlayer().skills;
+  const skills = {
+    str: player.strength >= TARGET,
+    def: player.defense >= TARGET,
+    dex: player.dexterity >= TARGET,
+    agi: player.agility >= TARGET,
+  };
+
+  for (const skill in skills) {
+    while (!skills[skill]) {
+      ns.singularity.gymWorkout(GYM, skill, false);
+      await ns.sleep(1500);
+      const current = ns.getPlayer().skills[SKILL_MAP[skill]];
+      skills[skill] = current >= TARGET;
     }
+  }
 
-    if (Object.values(skills).every((val) => val)) {
-      ns.tprint("Training complete.");
-      ns.singularity.stopAction();
+  if (Object.values(skills).every((val) => val)) {
+    ns.tprint("Training complete.");
+    ns.singularity.stopAction();
 
-      let inBB = ns.bladeburner.joinBladeburnerDivision();
-      if (inBB) ns.exec("bladeburner.js", "home");
-
-      ns.tprint("Joined Bladeburner Division.");
-      break;
-    }
-
-    await ns.sleep(1000);
+    ns.exec("crime-auto.js", "home");
   }
 }
