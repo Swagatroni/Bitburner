@@ -1,0 +1,2 @@
+----------------------- TO-DO -----------------------
+hacknet.js check if no nodes exist
