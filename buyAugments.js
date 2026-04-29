@@ -3,8 +3,11 @@ export async function main(ns) {
   ns.disableLog("ALL");
   const callbackScript = "buyAugments.js";
   // ns.ui.openTail();
+  const augLimit = 5;
 
   if (!ns.isRunning("GOD-EYE.js")) ns.exec("GOD-EYE.js", "home");
+  ns.exec("hashUpgrade.js", "home", 1, "ressearch");
+  // ns.exec("hashUpgrade.js", "home", 1, "corp");
 
   function getAugs() {
     const sing = ns.singularity;
@@ -48,7 +51,7 @@ export async function main(ns) {
     const toBeInstalled = all.filter((aug) => !installed.includes(aug));
 
     if (augs.length === 0) break; // No augs to buy, exit loop
-    if (toBeInstalled.length >= 10)
+    if (toBeInstalled.length >= augLimit)
       ns.singularity.installAugmentations(callbackScript);
 
     // For each aug:

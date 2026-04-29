@@ -5,6 +5,10 @@ export async function main(ns) {
   ns.disableLog("ALL");
   if (ns.args[0] === 1) ns.ui.openTail();
 
+  try {
+    ns.singularity.upgradeHomeRam();
+  } catch (e) {}
+
   const SPARE_SERVERS = [
     {
       name: "1-SpareServer",

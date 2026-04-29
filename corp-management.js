@@ -14,8 +14,8 @@ export async function main(ns) {
   ];
   const START_CITY = "Sector-12";
   const CORP_NAME = "Wayne Enterprises";
-  const EMPLOYEE_TARGET_PER_CITY = 40;
-  const CITY_READY_EMPLOYEES = 40;
+  const EMPLOYEE_TARGET_PER_CITY = 60;
+  const CITY_READY_EMPLOYEES = 60;
   const CITY_READY_WAREHOUSE_SIZE = 10000;
   const EXPANSION_FLOOR_EMPLOYEES = 18;
   const EXPANSION_FLOOR_WAREHOUSE_SIZE = 1000;
@@ -79,6 +79,18 @@ export async function main(ns) {
     return loopCount % LOG_EVERY_LOOPS === 0;
   }
 
+  async function waitForCorpState(state) {
+    while (CORP.getCorporation().nextState !== state) {
+      await ns.sleep(100);
+    }
+  }
+
+  async function waitForStartPhaseTransition() {
+    while (CORP.getCorporation().nextState === "START") {
+      await ns.sleep(50);
+    }
+  }
+
   async function waitForCorpCreationFunds() {
     if (CORP.hasCorporation()) {
       ns.print(
@@ -136,8 +148,18 @@ export async function main(ns) {
     return CORP.getDivision(division.Name).cities.length >= CITIES.length;
   }
 
+  function areAllDivisionCitiesAtFloor(division) {
+    const cities = CORP.getDivision(division.Name).cities;
+    if (cities.length < CITIES.length) return false;
+
+    for (const city of cities) {
+      if (!isCityAboveExpansionFloor(division, city)) return false;
+    }
+    return true;
+  }
+
   function getCityTargetsForPhase(division, funds) {
-    if (!isDivisionFullyExpanded(division)) {
+    if (!areAllDivisionCitiesAtFloor(division)) {
       return {
         employees: EXPANSION_FLOOR_EMPLOYEES,
         warehouseSize: EXPANSION_FLOOR_WAREHOUSE_SIZE,
@@ -151,7 +173,13 @@ export async function main(ns) {
   }
 
   function manageResearch(division) {
-    const order = ["Hi-Tech R&D Laboratory", "Market-TA.I", "Market-TA.II"];
+    const order = [
+      "Hi-Tech R&D Laboratory",
+      "Market-TA.I",
+      "Market-TA.II",
+      "AutoBrew",
+      "AutoPartyManager",
+    ];
     for (const research of order) {
       if (CORP.hasResearched(division.Name, research)) continue;
 
@@ -160,10 +188,6 @@ export async function main(ns) {
       if (points >= cost) {
         CORP.research(division.Name, research);
         ns.print(`[${division.Name}] Researched: ${research}`);
-      } else if (shouldLogThisLoop()) {
-        ns.print(
-          `[${division.Name}] Waiting on research points for ${research}: ${ns.formatNumber(points)} / ${ns.formatNumber(cost)}`,
-        );
       }
       break;
     }
@@ -249,7 +273,7 @@ export async function main(ns) {
   }
 
   function setEvenJobAssignments(divisionName, city, employeeCount) {
-    const allJobs = [
+    const allPossibleJobs = [
       "Operations",
       "Engineer",
       "Business",
@@ -257,14 +281,26 @@ export async function main(ns) {
       "Research & Development",
       "Intern",
     ];
-    const base = Math.floor(employeeCount / allJobs.length);
-    let extra = employeeCount % allJobs.length;
+    const targetJobs = [
+      "Operations",
+      "Engineer",
+      "Business",
+      "Management",
+      "Research & Development",
+    ];
+    const needsInterns =
+      !CORP.hasResearched(divisionName, "AutoBrew") ||
+      !CORP.hasResearched(divisionName, "AutoPartyManager");
+    if (needsInterns) targetJobs.push("Intern");
 
-    for (const job of allJobs) {
+    const base = Math.floor(employeeCount / targetJobs.length);
+    let extra = employeeCount % targetJobs.length;
+
+    for (const job of allPossibleJobs) {
       CORP.setAutoJobAssignment(divisionName, city, job, 0);
     }
 
-    for (const job of allJobs) {
+    for (const job of targetJobs) {
       const assign = base + (extra > 0 ? 1 : 0);
       CORP.setAutoJobAssignment(divisionName, city, job, assign);
       if (extra > 0) extra -= 1;
@@ -294,11 +330,11 @@ export async function main(ns) {
     const targets = getCityTargetsForPhase(division, funds);
     const desiredEmployees = targets.employees;
     const desiredWarehouseSize = targets.warehouseSize;
-    const fullyExpanded = isDivisionFullyExpanded(division);
-    const officeBuffer = fullyExpanded
+    const scaleBeyondFloor = areAllDivisionCitiesAtFloor(division);
+    const officeBuffer = scaleBeyondFloor
       ? OFFICE_UPGRADE_CASH_BUFFER
       : PRE_EXPANSION_OFFICE_CASH_BUFFER;
-    const warehouseBuffer = fullyExpanded
+    const warehouseBuffer = scaleBeyondFloor
       ? WAREHOUSE_UPGRADE_CASH_BUFFER
       : PRE_EXPANSION_WAREHOUSE_CASH_BUFFER;
 
@@ -311,10 +347,6 @@ export async function main(ns) {
       if (funds >= cost + officeBuffer) {
         CORP.upgradeOfficeSize(division.Name, city, growBy);
         office = CORP.getOffice(division.Name, city);
-      } else if (shouldLogThisLoop()) {
-        ns.print(
-          `[${division.Name}] ${city} office upgrade blocked by funds: ${ns.formatNumber(funds)} / ${ns.formatNumber(cost + officeBuffer)} needed.`,
-        );
       }
     }
 
@@ -335,22 +367,14 @@ export async function main(ns) {
         whCost + WAREHOUSE_PURCHASE_CASH_BUFFER
       ) {
         CORP.purchaseWarehouse(division.Name, city);
-      } else if (shouldLogThisLoop()) {
-        ns.print(
-          `[${division.Name}] ${city} warehouse purchase blocked by funds: ${ns.formatNumber(CORP.getCorporation().funds)} / ${ns.formatNumber(whCost + WAREHOUSE_PURCHASE_CASH_BUFFER)} needed.`,
-        );
       }
       return;
     }
 
-    if (fullyExpanded && warehouse.sizeUsed / warehouse.size > 0.9) {
+    if (scaleBeyondFloor && warehouse.sizeUsed / warehouse.size > 0.9) {
       const upCost = CORP.getUpgradeWarehouseCost(division.Name, city, 1);
       if (CORP.getCorporation().funds >= upCost + warehouseBuffer) {
         CORP.upgradeWarehouse(division.Name, city, 1);
-      } else if (shouldLogThisLoop()) {
-        ns.print(
-          `[${division.Name}] ${city} warehouse pressure-upgrade blocked by funds: ${ns.formatNumber(CORP.getCorporation().funds)} / ${ns.formatNumber(upCost + warehouseBuffer)} needed.`,
-        );
       }
     }
 
@@ -358,10 +382,6 @@ export async function main(ns) {
       const upCost = CORP.getUpgradeWarehouseCost(division.Name, city, 1);
       if (CORP.getCorporation().funds >= upCost + warehouseBuffer) {
         CORP.upgradeWarehouse(division.Name, city, 1);
-      } else if (shouldLogThisLoop()) {
-        ns.print(
-          `[${division.Name}] ${city} warehouse target-upgrade blocked by funds: ${ns.formatNumber(CORP.getCorporation().funds)} / ${ns.formatNumber(upCost + warehouseBuffer)} needed.`,
-        );
       }
     }
   }
@@ -388,12 +408,6 @@ export async function main(ns) {
       if (hasMarketTA2) {
         CORP.setMaterialMarketTA2(division.Name, city, material, true);
       }
-    }
-
-    if (shouldLogThisLoop() && division.Outputs.length > 0) {
-      ns.print(
-        `[${division.Name}] ${city} sell configured for: ${division.Outputs.join(", ")}`,
-      );
     }
 
     const divInfo = CORP.getDivision(division.Name);
@@ -435,12 +449,6 @@ export async function main(ns) {
     const funds = CORP.getCorporation().funds;
     const expandCost = CORP.getConstants().officeInitialCost;
     if (funds < expandCost) {
-      if (shouldLogThisLoop()) {
-        const need = expandCost;
-        ns.print(
-          `[${division.Name}] Expansion blocked by funds: ${ns.formatNumber(funds)} / ${ns.formatNumber(need)} needed.`,
-        );
-      }
       return;
     }
 
@@ -479,9 +487,9 @@ export async function main(ns) {
       try {
         CORP.bulkPurchase(name, city, material, amount);
       } catch (e) {
-        ns.print(
-          `Failed to purchase ${amount} of ${material} in ${city}: ${e}`,
-        );
+        // ns.print(
+        //   `Failed to purchase ${amount} of ${material} in ${city}: ${e}`,
+        // );
       }
     } else {
       CORP.sellMaterial(name, city, material, -amount, "MP");
@@ -566,12 +574,15 @@ export async function main(ns) {
   }
 
   while (true) {
+    // Run exactly once per corporation cycle at START phase.
+    await waitForCorpState("START");
+
     loopCount += 1;
     divisions = getManagedDivisions();
 
     if (shouldLogThisLoop()) {
       ns.print(
-        `[Loop ${loopCount}] Active. Corp funds: ${ns.formatNumber(CORP.getCorporation().funds)}`,
+        `[Loop ${loopCount}] START phase. Corp funds: ${ns.formatNumber(CORP.getCorporation().funds)}`,
       );
       if (divisions.length === 0) {
         ns.print("[Loop] No divisions to manage yet.");
@@ -586,12 +597,6 @@ export async function main(ns) {
         (a, b) => getCityWeaknessScore(div, b) - getCityWeaknessScore(div, a),
       );
 
-      if (cities.length > 0) {
-        const weakest = cities[0];
-        ns.print(`[${div.Name}] Prioritizing weakest city: ${weakest}`);
-      }
-
-      
       for (const city of cities) {
         setupSellingAndSmartSupply(div, city);
         manageOfficeAndWarehouse(div, city);
@@ -602,6 +607,8 @@ export async function main(ns) {
       productManagement(div);
       tryExpandIfOperational(div);
     }
-    await ns.sleep(10000);
+
+    // Wait for the cycle to move off START so we don't double-run this phase.
+    await waitForStartPhaseTransition();
   }
 }
