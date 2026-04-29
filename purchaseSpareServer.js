@@ -47,7 +47,7 @@ export async function main(ns) {
       if (ns.upgradePurchasedServer(server, desiredRam)) {
         ns.tprint(`Upgraded ${server} to ${desiredRam} RAM`);
         baseRam = desiredRam;
-        if (targetRAM > scriptRam * 1.2) break;
+        if (targetRAM > scriptRam) break;
         else targetRAM *= 2;
       } else ns.print(`Failed to upgrade ${server} to ${desiredRam} RAM.`);
     }

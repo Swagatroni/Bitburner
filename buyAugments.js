@@ -3,10 +3,10 @@ export async function main(ns) {
   ns.disableLog("ALL");
   const callbackScript = "buyAugments.js";
   // ns.ui.openTail();
-  const augLimit = 5;
+  const augLimit = 3;
 
   if (!ns.isRunning("GOD-EYE.js")) ns.exec("GOD-EYE.js", "home");
-  ns.exec("hashUpgrade.js", "home", 1, "ressearch");
+  ns.exec("hashUpgrade.js", "home", 1, "research");
   // ns.exec("hashUpgrade.js", "home", 1, "corp");
 
   function getAugs() {

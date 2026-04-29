@@ -1,7 +1,7 @@
 /** @param {NS} ns **/
 export async function main(ns) {
   ns.disableLog("ALL");
-  ns.ui.openTail();
+  // ns.ui.openTail();
 
   const CORP = ns.corporation;
   const CITIES = [
@@ -41,7 +41,7 @@ export async function main(ns) {
 
   const INDUSTRY_BONUS_WEIGHTS = {
     Agriculture: [4, 5, 5, 14],
-    Tobacco: [2, 2, 1, 3],
+    Tobacco: [2, 4, 2, 2],
   };
 
   function getDivisionRuntimeState(divisionName) {
@@ -505,44 +505,60 @@ export async function main(ns) {
     if (!divInfo.makesProducts) return;
 
     const city = divInfo.cities[0];
-    let products = divInfo.products;
+    const products = [...divInfo.products];
 
-    while (products.length < divInfo.maxProducts) {
-      const randomNum = Math.floor(Math.random() * 100);
-      const productName = `${division.Name}-${randomNum}`;
-      if (products.includes(productName)) continue;
-      try {
-        CORP.makeProduct(
-          division.Name,
-          city,
-          productName,
-          designInvestment,
-          marketingInvestment,
-        );
-      } catch (_) {
-        if (shouldLogThisLoop()) {
-          ns.print(
-            `[${division.Name}] Not enough funds to start new product yet.`,
+    const tryStartProduct = () => {
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        const productName = `${division.Name}-${Date.now()}-${attempt}`;
+        if (products.includes(productName)) continue;
+        try {
+          CORP.makeProduct(
+            division.Name,
+            city,
+            productName,
+            designInvestment,
+            marketingInvestment,
           );
+          return true;
+        } catch (_) {
+          if (shouldLogThisLoop()) {
+            ns.print(
+              `[${division.Name}] Not enough funds to start new product yet.`,
+            );
+          }
+          return false;
         }
-        break;
       }
-      products = CORP.getDivision(division.Name).products;
+      return false;
+    };
+
+    const productStates = products
+      .map((productName) => {
+        try {
+          return CORP.getProduct(division.Name, city, productName);
+        } catch (_) {
+          return null;
+        }
+      })
+      .filter((product) => product !== null);
+
+    const hasDevelopingProduct = productStates.some(
+      (product) => product.developmentProgress < 100,
+    );
+
+    if (products.length < divInfo.maxProducts) {
+      if (!hasDevelopingProduct) {
+        tryStartProduct();
+      }
+      return;
     }
 
-    products.sort((a, b) => {
-      const productA = CORP.getProduct(division.Name, city, a);
-      const productB = CORP.getProduct(division.Name, city, b);
-      return productB.developmentProgress - productA.developmentProgress;
-    });
-
-    const leastDeveloped = products.at(-1);
-    if (
-      leastDeveloped &&
-      CORP.getProduct(division.Name, city, leastDeveloped)
-        .developmentProgress >= 100
-    ) {
-      CORP.discontinueProduct(division.Name, products.shift());
+    if (!hasDevelopingProduct) {
+      const productToDiscontinue = products[0];
+      if (productToDiscontinue) {
+        CORP.discontinueProduct(division.Name, productToDiscontinue);
+        tryStartProduct();
+      }
     }
   }
 

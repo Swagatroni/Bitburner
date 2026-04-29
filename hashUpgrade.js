@@ -9,6 +9,7 @@ export async function main(ns) {
   const gym = ns.args.includes("gym");
   const res = ns.args.includes("research" || "res");
   const corp = ns.args.includes("corp");
+  const study = ns.args.includes("study");
 
   if (money) upg = "Sell for Money";
   if (rank) upg = "Exchange for Bladeburner Rank";
@@ -16,6 +17,7 @@ export async function main(ns) {
   if (gym) upg = "Improve Gym Training";
   if (res) upg = "Exchange for Corporation Research";
   if (corp) upg = "Sell for Corporation Funds";
+  if (study) upg = "Improve Studying";
 
   const hn = ns.hacknet;
 
