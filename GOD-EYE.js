@@ -1,5 +1,7 @@
 import { handleDarkWeb, handleBackdoors } from "./Curtain/utils.js";
 
+const CORP_SCRIPTS = ["corp-management.js", "corp-scale.js"];
+
 /** @param {NS} ns **/
 export async function main(ns) {
   ns.disableLog("ALL");
@@ -27,7 +29,7 @@ export async function main(ns) {
       name: "2-SpareServer",
       totalRam: 0,
       ram: false,
-      scripts: [{ name: "corp-management.js", threads: 1, args: [] }],
+      scripts: [],
     },
   ];
 
@@ -85,6 +87,10 @@ export async function main(ns) {
       done.spareScripts = await startServerScripts(ns, SPARE_SERVERS);
     }
 
+    if (SPARE_SERVERS[1].ram) {
+      await manageCorpScripts(ns, SPARE_SERVERS[1]);
+    }
+
     if (Object.values(done).every((v) => v)) {
       ns.tprint("GOD-EYE is fully operational.");
       break;
@@ -122,6 +128,9 @@ async function runscript(ns, script, server) {
     "Curtain/find-targets.js",
     "factionAugs.js",
     "diamond-hands.js",
+    "corp-manager-core.js",
+    "corp-scale.js",
+    "corp-management.js",
   ];
 
   const copied = await ns.scp(filesToCopy, server.name, "home");
@@ -140,7 +149,28 @@ async function runscript(ns, script, server) {
   return true;
 }
 
+async function manageCorpScripts(ns, server) {
+  const hasCorp = ns.corporation.hasCorporation();
+  const desiredScript = hasCorp ? "corp-scale.js" : "corp-management.js";
+  const otherScript = hasCorp ? "corp-management.js" : "corp-scale.js";
+
+  if (ns.isRunning(otherScript, server.name)) {
+    ns.scriptKill(otherScript, server.name);
+    ns.tprint(`Stopped ${otherScript} on ${server.name}`);
+  }
+
+  if (!ns.isRunning(desiredScript, server.name)) {
+    await runscript(ns, { name: desiredScript, threads: 1, args: [] }, server);
+  }
+}
+
 function getTotalRam(ns, grouping) {
+  if (grouping.name === "2-SpareServer") {
+    return Math.max(
+      ...CORP_SCRIPTS.map((scriptName) => ns.getScriptRam(scriptName)),
+    );
+  }
+
   let total = 0;
   for (const script of grouping.scripts) {
     total += ns.getScriptRam(script.name) * script.threads;
