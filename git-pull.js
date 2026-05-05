@@ -36,6 +36,7 @@ export async function main(ns) {
       ? options.download
       : await repositoryListing(ns),
   );
+  let count = 0;
   for (const localFilePath of filesToDownload) {
     let fullLocalFilePath = pathJoin(options.subfolder, localFilePath);
     const remoteFilePath = `https://` + pathJoin(baseUrl, localFilePath);
@@ -49,16 +50,14 @@ export async function main(ns) {
       )) &&
       rewriteFileForSubfolder(ns, fullLocalFilePath)
     )
-      ns.tprint(
-        `SUCCESS: Updated "${fullLocalFilePath}" to the latest from ${remoteFilePath}`,
-      );
+      count++;
     else
       ns.tprint(
         `WARNING: "${fullLocalFilePath}" was not updated. (Currently running, or not located at ${remoteFilePath}?)`,
       );
   }
   ns.tprint(
-    `INFO: Pull complete. If you have any questions or issues, create an issue on github or join the ` +
+    `INFO: Pull complete. ->${count} file(s) updated.<- If you have any questions or issues, create an issue on github or join the ` +
       `Bitburner Discord channel "#Insight's-scripts": https://discord.com/channels/415207508303544321/935667531111342200`,
   );
   // Remove any temp files / scripts from the prior version

@@ -60,6 +60,8 @@ export function hasRam(ns, server, scriptRam, useMax = false) {
 }
 
 export function canHack(ns, server) {
+  // Hacknet servers are not valid hacking targets and can throw in API calls.
+  if (server.startsWith("hacknet-server-")) return false;
   var pHackLvl = ns.getHackingLevel(); // player
   var sHackLvl = ns.getServerRequiredHackingLevel(server);
   return pHackLvl >= sHackLvl;

@@ -184,7 +184,7 @@ export async function main(ns) {
 
     if (!opName || onCooldown(opName)) return null;
 
-    const remaining = bb.getActionCountRemaining("BlackOps", opName);
+    const remaining = bb.getActionCountRemaining("Black Operations", opName);
     if (remaining < 1) return null; // “more than 1”
     if (bb.getRank() < reqRank) return null;
 
@@ -240,7 +240,7 @@ export async function main(ns) {
     }
 
     // 2) Operations
-    const op = pickFromPriority("Operation", OP_PRIORITY, CFG.minSuccess);
+    const op = pickFromPriority("Operations", OP_PRIORITY, CFG.minSuccess);
     if (op) {
       ns.print(
         `OP: ${op.name} | ${fmtPct(op.ch.min)} | rem ${ns.format.number(op.remaining, 0)}`,
@@ -251,7 +251,7 @@ export async function main(ns) {
     }
 
     // 3) Contracts
-    const ct = pickFromPriority("Contract", CT_PRIORITY, CFG.minSuccess);
+    const ct = pickFromPriority("Contracts", CT_PRIORITY, CFG.minSuccess);
     if (ct) {
       ns.print(
         `CT: ${ct.name} | ${fmtPct(ct.ch.min)} | rem ${ns.format.number(ct.remaining, 0)}`,
