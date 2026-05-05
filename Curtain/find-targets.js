@@ -85,17 +85,14 @@ export function getStrategy(ns, node) {
     type = "flog";
     seq = ["w"];
     allocation = [1.0];
-
   } else if (moneyRatio < 0.6) {
     type = "nourish";
     seq = ["g", "w"];
     allocation = [0.7, 0.3];
-
   } else if (hackChance < 0.5) {
     type = "flog";
     seq = ["w"];
     allocation = [1.0];
-
   } else {
     type = "plunder";
     seq = ["h", "g", "w"];
@@ -132,10 +129,10 @@ export function getPotentialTargets(ns, compareField = "revYield") {
   };
 
   var networkNodes = getNetworkNodes(ns);
+  networkNodes = networkNodes.filter((node) => !node.includes("hacknet-"));
   var hackableNodes = networkNodes.filter((node) => {
     return (
       (canHack(ns, node) && canPenetrate(ns, node, cracks)) ||
-      // ns.hackAnalyzeChance(node) > 0.75) ||
       node.includes("pserv")
     );
   });
