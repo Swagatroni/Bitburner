@@ -29,7 +29,7 @@ export async function main(ns) {
         const pservs = getPservs(ns);
         if (ns.serverExists(pservs[0])) {
           let size = ns.getServerMaxRam(pservs[0]);
-          if (size < ns.getPurchasedServerMaxRam()) {
+          if (size < ns.cloud.getRamLimit()) {
             headers.push(`PServs (${ns.format.ram(size, 0)}):`);
             values.push(serverUpgrades(ns));
           }

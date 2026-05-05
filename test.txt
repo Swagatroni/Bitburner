@@ -270,11 +270,11 @@ It has been automatically replaced with "ns.cloud.deleteServer()"
 "ns.getPurchasedServers()" was removed.
 It has been automatically replaced with "ns.cloud.getServerNames()"
 
-"ns.getPurchasedServerLimit()" was removed.
+"ns.cloud.getServerLimit()" was removed.
 It has been automatically replaced with "ns.cloud.getServerLimit()"
 
-"ns.getPurchasedServerMaxRam()" was removed.
-It has been automatically replaced with "ns.cloud.getRamLimit()"
+"ns.cloud.getRamLimit()" was removed.
+It has been automatically replaced with "cloud.getRamLimit()"
 
 Usage of the following functions may have been affected:
 ns.getPurchasedServerCost
@@ -284,8 +284,8 @@ ns.upgradePurchasedServer
 ns.renamePurchasedServer
 ns.deleteServer
 ns.getPurchasedServers
-ns.getPurchasedServerLimit
-ns.getPurchasedServerMaxRam
+ns.cloud.getServerLimit
+ns.cloud.getRamLimit
 
 Potentially affected files on server home (with line numbers):
 custom-stats.js: (Line number: 32)

@@ -91,7 +91,7 @@ export function getThresholds(ns, node) {
 }
 
 export function getPservs(ns) {
-  let maxServers = ns.getPurchasedServerLimit();
+  let maxServers = ns.cloud.getServerLimit();
   if (maxServers === 0) return [];
   let pservs = [];
 

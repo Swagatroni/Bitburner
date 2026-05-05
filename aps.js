@@ -6,7 +6,7 @@ export async function main(ns) {
 
   const home = "home";
   const pservs = getPservs(ns);
-  const MAX_RAM = ns.getPurchasedServerMaxRam();
+  const MAX_RAM = ns.cloud.getRamLimit();
 
   const hasStocks =
     typeof ns.stock !== "undefined" &&

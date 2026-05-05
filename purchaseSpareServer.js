@@ -4,7 +4,7 @@ export async function main(ns) {
   // ns.ui.openTail();
 
   const home = "home";
-  const MAX_RAM = ns.getPurchasedServerMaxRam();
+  const MAX_RAM = ns.cloud.getRamLimit();
   const server = ns.args[0];
   const scriptRam = ns.args[1] || 256;
 

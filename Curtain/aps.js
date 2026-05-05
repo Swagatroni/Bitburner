@@ -6,7 +6,7 @@ export async function main(ns) {
 
   const home = "home";
   const pservs = getPservs(ns);
-  const MAX_RAM = ns.getPurchasedServerMaxRam();
+  const MAX_RAM = ns.cloud.getRamLimit();
 
   const trader = "diamond-hands.js";
 
@@ -53,7 +53,7 @@ export async function main(ns) {
       (s) =>
         ns.serverExists(s) &&
         ns.getServerMaxRam(s) < desiredRam &&
-        ns.getServerMaxRam(s) < MAX_RAM
+        ns.getServerMaxRam(s) < MAX_RAM,
     );
   }
 
@@ -87,8 +87,8 @@ export async function main(ns) {
         while (!canBuyNew(targetRAM)) {
           ns.print(
             `Waiting to buy ${server} @ ${ns.format.ram(
-              targetRAM
-            )}. Cash: $${ns.format.number(cash())}`
+              targetRAM,
+            )}. Cash: $${ns.format.number(cash())}`,
           );
           await ns.sleep(3000);
         }
@@ -112,10 +112,10 @@ export async function main(ns) {
     if (wealth < costOne) {
       ns.print(
         `Total wealth (${ns.format.number(
-          wealth
+          wealth,
         )}) < cost of one upgrade (${ns.format.number(
-          costOne
-        )}) @ ${ns.format.ram(desiredRam)}. Skipping liquidation this cycle.`
+          costOne,
+        )}) @ ${ns.format.ram(desiredRam)}. Skipping liquidation this cycle.`,
       );
       return;
     }
@@ -129,7 +129,7 @@ export async function main(ns) {
     if (hasStocks) {
       const recovered = liquidateStocks();
       ns.print(
-        `Liquidated portfolio, recovered ~${ns.format.number(recovered)} for upgrades.`
+        `Liquidated portfolio, recovered ~${ns.format.number(recovered)} for upgrades.`,
       );
     }
 
@@ -146,8 +146,8 @@ export async function main(ns) {
       } else {
         ns.print(
           `Not enough cash left to upgrade ${server} to ${ns.format.ram(
-            desiredRam
-          )}. Cash: ${ns.format.number(cash())}, cost: ${ns.format.number(cost)}`
+            desiredRam,
+          )}. Cash: ${ns.format.number(cash())}, cost: ${ns.format.number(cost)}`,
         );
       }
     }
@@ -178,7 +178,7 @@ export async function main(ns) {
     }
     if (allMaxed) {
       ns.tprint(
-        `All purchased servers are at maximum RAM (${ns.format.ram(MAX_RAM)})`
+        `All purchased servers are at maximum RAM (${ns.format.ram(MAX_RAM)})`,
       );
       break;
     }
@@ -202,8 +202,8 @@ export async function main(ns) {
       const cost = upgradeCost(sample, targetRAM);
       ns.tprint(
         `Next fleet target: ${ns.format.ram(
-          targetRAM
-        )} (upgrade ~${ns.format.number(cost)} each)`
+          targetRAM,
+        )} (upgrade ~${ns.format.number(cost)} each)`,
       );
     }
 
@@ -212,7 +212,6 @@ export async function main(ns) {
     if (cycles !== undefined) {
       count++;
       if (count >= cycles) break;
-
     }
   }
 }
