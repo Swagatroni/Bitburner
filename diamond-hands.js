@@ -57,8 +57,8 @@ export async function main(ns) {
     if (stock.forecast > 0.5) {
       // HOLD
       const curValue = stock.cost + stock.profit;
-      const roi = ns.formatNumber(100 * (stock.profit / stock.cost));
-      ns.print(`INFO: LONG ${ns.formatNumber(curValue)} ${roi}%`);
+      const roi = ns.format.number(100 * (stock.profit / stock.cost));
+      ns.print(`INFO: LONG ${ns.format.number(curValue)} ${roi}%`);
       overallValue += curValue;
     } else {
       // Take tendies!
@@ -67,7 +67,7 @@ export async function main(ns) {
       const saleCost = stock.longPrice * stock.longShares;
       const saleProfit = saleTotal - saleCost - tradeFees;
       stock.shares = 0;
-      ns.print(`WARN: SOLD for ${ns.formatNumber(saleProfit)} profit`);
+      ns.print(`WARN: SOLD for ${ns.format.number(saleProfit)} profit`);
     }
   }
 
@@ -75,8 +75,8 @@ export async function main(ns) {
     if (stock.forecast < 0.5) {
       // HOLD
       const curValue = stock.cost + stock.profit;
-      const roi = ns.formatNumber(100 * (stock.profit / stock.cost));
-      ns.print(`INFO: SHORT ${ns.formatNumber(curValue)} ${roi}%`);
+      const roi = ns.format.number(100 * (stock.profit / stock.cost));
+      ns.print(`INFO: SHORT ${ns.format.number(curValue)} ${roi}%`);
 
       overallValue += curValue;
     } else {
@@ -84,7 +84,7 @@ export async function main(ns) {
       const salePrice = ns.stock.sellShort(stock.sym, stock.shortShares);
       const saleTotal = stock.shortPrice * stock.shortShares;
       const saleProfit = saleTotal - salePrice * stock.shortShares - tradeFees;
-      ns.print(`WARN: COVERED SHORT for ${ns.formatNumber(saleProfit)} profit`);
+      ns.print(`WARN: COVERED SHORT for ${ns.format.number(saleProfit)} profit`);
     }
   }
 
@@ -98,7 +98,7 @@ export async function main(ns) {
           const sharesToBuy = Math.min(stock.maxShares, sharesWeCanBuy);
           if (ns.stock.buyStock(stock.sym, sharesToBuy) > 0) {
             ns.print(
-              `WARN\t${stock.summary}\t- LONG @ ${ns.formatNumber(sharesToBuy)}`,
+              `WARN\t${stock.summary}\t- LONG @ ${ns.format.number(sharesToBuy)}`,
             );
           }
         }
@@ -115,7 +115,7 @@ export async function main(ns) {
             ns.stock.buyShort(stock.sym, sharesToShort) > 0
           ) {
             ns.print(
-              `WARN\t${stock.summary}\t- SHORT @ ${ns.formatNumber(sharesToShort)}`,
+              `WARN\t${stock.summary}\t- SHORT @ ${ns.format.number(sharesToShort)}`,
             );
           }
         }
@@ -136,7 +136,7 @@ export async function main(ns) {
     const stocks = getStonks();
     takeTendies(stocks);
     yolo(stocks);
-    ns.print(`Stock value: ${ns.formatNumber(overallValue)}`);
+    ns.print(`Stock value: ${ns.format.number(overallValue)}`);
     ns.print("");
     overallValue = 0;
 
@@ -164,5 +164,5 @@ export function getPortfolioValue(ns) {
     value += longCost + shortCost + longProfit + shortProfit;
   }
 
-  return ns.formatNumber(value);
+  return ns.format.number(value);
 }

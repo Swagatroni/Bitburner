@@ -228,7 +228,7 @@ export async function main(ns) {
     const bo = pickBlackOp();
     if (bo) {
       ns.print(
-        `BLACKOP: ${bo.name} | ${fmtPct(bo.ch.min)} | rem ${ns.formatNumber(bo.remaining, 0)}`,
+        `BLACKOP: ${bo.name} | ${fmtPct(bo.ch.min)} | rem ${ns.format.number(bo.remaining, 0)}`,
       );
       if (startAction(bo.type, bo.name)) {
         await sleepForAction(bo.type, bo.name);
@@ -243,7 +243,7 @@ export async function main(ns) {
     const op = pickFromPriority("Operation", OP_PRIORITY, CFG.minSuccess);
     if (op) {
       ns.print(
-        `OP: ${op.name} | ${fmtPct(op.ch.min)} | rem ${ns.formatNumber(op.remaining, 0)}`,
+        `OP: ${op.name} | ${fmtPct(op.ch.min)} | rem ${ns.format.number(op.remaining, 0)}`,
       );
       startAction(op.type, op.name);
       await sleepForAction(op.type, op.name);
@@ -254,7 +254,7 @@ export async function main(ns) {
     const ct = pickFromPriority("Contract", CT_PRIORITY, CFG.minSuccess);
     if (ct) {
       ns.print(
-        `CT: ${ct.name} | ${fmtPct(ct.ch.min)} | rem ${ns.formatNumber(ct.remaining, 0)}`,
+        `CT: ${ct.name} | ${fmtPct(ct.ch.min)} | rem ${ns.format.number(ct.remaining, 0)}`,
       );
       startAction(ct.type, ct.name);
       await sleepForAction(ct.type, ct.name);

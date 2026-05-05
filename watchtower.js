@@ -55,12 +55,12 @@ export async function main(ns) {
 
     ns.print("═══════════════════════════════════════════════════");
     ns.print("    WATCHTOWER - Active Monitoring");
-    ns.print(`    Money: $${ns.formatNumber(ns.getPlayer().money)}`);
+    ns.print(`    Money: $${ns.format.number(ns.getPlayer().money)}`);
 
     try {
       const pservs = getPservs(ns);
       let size = ns.getServerMaxRam(pservs[0]) || null;
-      ns.print(`    PServs (${ns.formatRam(size, 0)}):  ${serverUpgrades(ns)}`);
+      ns.print(`    PServs (${ns.format.ram(size, 0)}):  ${serverUpgrades(ns)}`);
     } catch (error) {}
     ns.print(` `);
     ns.print(`    ${new Date().toLocaleTimeString()}`);

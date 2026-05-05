@@ -1,2 +1,400 @@
------------------------ TO-DO -----------------------
-hacknet.js check if no nodes exist
+API BREAK INFO FOR 3.0.0
+
+You cannot use the deprecated VSCode extension to connect to the Steam app via API server now. You have to use Remote API to connect your external editors to Bitburner.
+For more information, please check the Remote API page in the Documentation tab. If you have a question, please ask us on #external-editors on Discord (https://discord.gg/TFc3hKD).
+
+
+
+ns.nFormat() was removed.
+Use ns.format.number, ns.format.ram, ns.format.percent, or JS built-in objects/functions (e.g., Intl.NumberFormat, Intl.PluralRules, Intl.Locale) instead.
+
+Usage of the following functions may have been affected:
+ns.nFormat
+
+Potentially affected files on server home (with line numbers):
+custom-stats.js: (Line numbers: 76, 79)
+
+Potentially affected files on server 1-SpareServer (with line numbers):
+custom-stats.js: (Line numbers: 76, 79)
+
+
+
+The formatting functions have been moved to their own interface, ns.format.
+Each function has been replaced with their corresponding interface variant.
+Additionally, the naming of ns.tFormat has been changed to ns.format.time.
+
+Usage of the following functions may have been affected:
+ns.formatNumber
+ns.formatRam
+ns.formatPercent
+ns.tFormat
+
+Potentially affected files on server home (with line numbers):
+hacknet.js: (Line number: 67)
+diamond-hands.js: (Line numbers: 60, 61, 70, 78, 79, 87, 101, 118, 139, 167)
+custom-stats.js: (Line numbers: 33, 42, 59, 68, 73)
+Curtain/utils.js: (Line number: 139)
+monitor.js: (Line numbers: 24, 26, 27, 28)
+Curtain/aps.js: (Line numbers: 89, 91, 96, 114, 116, 118, 132, 148, 150, 181, 204, 206)
+aps.js: (Line numbers: 60, 60, 79, 79, 112, 130, 130)
+gang-management.js: (Line numbers: 120, 128, 385, 402)
+sleeves.js: (Line number: 40)
+watchtower.js: (Line numbers: 58, 63)
+infiltration.js: (Line numbers: 43, 47, 48)
+bladeburner.js: (Line numbers: 231, 246, 257)
+factionAugs.js: (Line numbers: 33, 34, 36)
+purchaseSpareServer.js: (Line numbers: 19, 42, 43, 44, 59)
+stock-management.js: (Line number: 237)
+buyAugments.js: (Line numbers: 62, 69)
+corp-manager-core.js: (Line numbers: 115, 137, 309, 333, 344, 471, 511, 528, 546, 562, 588)
+
+Potentially affected files on server 1-SpareServer (with line numbers):
+Curtain/utils.js: (Line number: 139)
+factionAugs.js: (Line numbers: 33, 34, 36)
+diamond-hands.js: (Line numbers: 60, 61, 70, 78, 79, 87, 101, 118, 139, 167)
+corp-manager-core.js: (Line numbers: 115, 137, 309, 333, 344, 471, 511, 528, 546, 562, 588)
+gang-management.js: (Line numbers: 120, 128, 385, 402)
+bladeburner.js: (Line numbers: 231, 246, 257)
+sleeves.js: (Line number: 40)
+watchtower.js: (Line numbers: 58, 63)
+custom-stats.js: (Line numbers: 33, 42, 59, 68, 73)
+
+Potentially affected files on server 2-SpareServer (with line numbers):
+Curtain/utils.js: (Line number: 139)
+factionAugs.js: (Line numbers: 33, 34, 36)
+diamond-hands.js: (Line numbers: 60, 61, 70, 78, 79, 87, 101, 118, 139, 167)
+corp-manager-core.js: (Line numbers: 115, 137, 309, 333, 344, 471, 511, 528, 546, 562, 588)
+
+
+
+ns.corporation.setAutoJobAssignment() was removed.
+It has been automatically replaced with "ns.corporation.setJobAssignment()".
+
+Usage of the following functions may have been affected:
+ns.corporation.setAutoJobAssignment
+
+Potentially affected files on server home (with line numbers):
+corp-manager-core.js: (Line numbers: 264, 269)
+
+Potentially affected files on server 1-SpareServer (with line numbers):
+corp-manager-core.js: (Line numbers: 264, 269)
+
+Potentially affected files on server 2-SpareServer (with line numbers):
+corp-manager-core.js: (Line numbers: 264, 269)
+
+
+
+With some APIs, when you passed values to their params, you could pass a value that was not an exact match. For example, with ns.singularity.commitCrime, you could pass "Rob Store", "rob store", "RobStore", "robstore", "robStore", etc. This is called "fuzzy matching". Now, you must pass an exact value (i.e., Rob Store). This change affects:
+- Bladeburner action and type: BladeburnerActionType, BladeburnerGeneralActionName, BladeburnerContractName, BladeburnerOperationName, BladeburnerBlackOpName, SpecialBladeburnerActionTypeForSleeve, BladeburnerActionTypeForSleeve.
+- Crime: CrimeType
+- Faction work: FactionWorkType
+- University class: UniversityClassType
+- Gym stat: GymType
+- Job field: JobField
+- Stock position: PositionType
+- Stock order: OrderType
+You can access these values via ns.enums and Bladeburner APIs.
+
+
+
+ns.nuke, ns.brutessh, ns.ftpcrack, ns.relaysmtp, ns.httpworm, and ns.sqlinject now do not throw an error when you do not have the required .exe file or enough opened ports.
+This should not be a problem with most scripts. However, if you were catching errors and branching on the result of success/failure, you will need to use the return value instead.
+
+Usage of the following functions may have been affected:
+ns.nuke
+ns.brutessh
+ns.ftpcrack
+ns.relaysmtp
+ns.httpworm
+ns.sqlinject
+
+Potentially affected files on server home (with line numbers):
+launch-fleets.js: (Line numbers: 26, 27, 28, 29, 30)
+early-deploy.js: (Line numbers: 12, 13, 14, 15, 16)
+Curtain/find-targets.js: (Line numbers: 127, 128, 129, 130, 131)
+Curtain/utils.js: (Line number: 81)
+Curtain/search.js: (Line numbers: 13, 14, 15, 16, 17)
+Curtain/find-targets-formulas.js: (Line numbers: 127, 128, 129, 130, 131)
+
+Potentially affected files on server 1-SpareServer (with line numbers):
+launch-fleets.js: (Line numbers: 26, 27, 28, 29, 30)
+Curtain/utils.js: (Line number: 81)
+Curtain/find-targets.js: (Line numbers: 127, 128, 129, 130, 131)
+
+Potentially affected files on server 2-SpareServer (with line numbers):
+Curtain/utils.js: (Line number: 81)
+Curtain/find-targets.js: (Line numbers: 127, 128, 129, 130, 131)
+
+
+
+ns.stock.getConstants().WSEAccountCost was removed.
+It has been automatically replaced with "ns.stock.getConstants().WseAccountCost".
+
+ns.stock.getConstants().TIXAPICost was removed.
+It has been automatically replaced with "ns.stock.getConstants().TixApiCost".
+
+ns.stock.hasWSEAccount() was removed.
+It has been automatically replaced with "ns.stock.hasWseAccount()".
+
+ns.stock.hasTIXAPIAccess() was removed.
+It has been automatically replaced with "ns.stock.hasTixApiAccess()".
+
+ns.stock.has4SDataTIXAPI() was removed.
+It has been automatically replaced with "ns.stock.has4SDataTixApi()".
+
+Usage of the following functions may have been affected:
+ns.stock.getConstants().WSEAccountCost
+ns.stock.getConstants().TIXAPICost
+ns.stock.hasWSEAccount
+ns.stock.hasTIXAPIAccess
+ns.stock.has4SDataTIXAPI
+
+Potentially affected files on server home (with line numbers):
+Curtain/utils.js: (Line numbers: 174, 177, 183)
+Curtain/aps.js: (Line numbers: 16, 17)
+aps.js: (Line numbers: 13, 14, 15)
+stock-management.js: (Line numbers: 23, 23, 29)
+
+Potentially affected files on server 1-SpareServer (with line numbers):
+Curtain/utils.js: (Line numbers: 174, 177, 183)
+
+Potentially affected files on server 2-SpareServer (with line numbers):
+Curtain/utils.js: (Line numbers: 174, 177, 183)
+
+
+
+Some APIs returned a default value when you passed the hostname of a non-hackable server (e.g., hacknet server) to them.
+These APIs now throw an error. The affected APIs are:
+- ns.hackAnalyzeThreads
+- ns.hackAnalyze
+- ns.hackAnalyzeSecurity
+- ns.hackAnalyzeChance
+- ns.growthAnalyze
+- ns.growthAnalyzeSecurity
+- ns.nuke
+- ns.brutessh
+- ns.ftpcrack
+- ns.relaysmtp
+- ns.httpworm
+- ns.sqlinject
+- ns.getServerMoneyAvailable
+- ns.getServerSecurityLevel
+- ns.getServerBaseSecurityLevel
+- ns.getServerMinSecurityLevel
+- ns.getServerRequiredHackingLevel
+- ns.getServerMaxMoney
+- ns.getServerGrowth
+- ns.getServerNumPortsRequired
+- ns.cloud.deleteServer
+- ns.getHackTime
+- ns.getGrowTime
+- ns.getWeakenTime
+
+
+Usage of the following functions may have been affected:
+ns.hackAnalyzeThreads
+ns.hackAnalyze
+ns.hackAnalyzeSecurity
+ns.hackAnalyzeChance
+ns.growthAnalyze
+ns.growthAnalyzeSecurity
+ns.nuke
+ns.brutessh
+ns.ftpcrack
+ns.relaysmtp
+ns.httpworm
+ns.sqlinject
+ns.getServerMoneyAvailable
+ns.getServerSecurityLevel
+ns.getServerBaseSecurityLevel
+ns.getServerMinSecurityLevel
+ns.getServerRequiredHackingLevel
+ns.getServerMaxMoney
+ns.getServerGrowth
+ns.getServerNumPortsRequired
+ns.deleteServer
+ns.getHackTime
+ns.getGrowTime
+ns.getWeakenTime
+
+Potentially affected files on server home (with line numbers):
+launch-fleets.js: (Line numbers: 26, 27, 28, 29, 30, 85, 86, 87, 95, 123, 125)
+early-deploy.js: (Line numbers: 12, 13, 14, 15, 16)
+Curtain/profit.js: (Line numbers: 4, 5, 8, 10)
+Curtain/find-targets.js: (Line numbers: 22, 23, 24, 25, 26, 29, 66, 67, 69, 127, 128, 129, 130, 131, 138, 138)
+Curtain/utils.js: (Line numbers: 50, 64, 76, 81, 85, 86)
+monitor.js: (Line numbers: 17, 19, 20, 21, 26, 26, 26, 27, 27, 28)
+Curtain/search.js: (Line numbers: 13, 14, 15, 16, 17, 84, 94)
+home-deploy.js: (Line numbers: 53, 54, 55, 62, 85, 87)
+GOD-EYE.js: (Line number: 69)
+Curtain/aps.js: (Line number: 30)
+aps.js: (Line number: 28)
+Curtain/find-targets-formulas.js: (Line numbers: 22, 23, 24, 25, 26, 29, 66, 67, 69, 127, 128, 129, 130, 131, 138, 138)
+sleeves.js: (Line number: 28)
+Curtain/escape.js: (Line number: 10)
+purchaseSpareServer.js: (Line number: 30)
+stock-management.js: (Line numbers: 90, 159)
+buyAugments.js: (Line number: 59)
+
+Potentially affected files on server 1-SpareServer (with line numbers):
+launch-fleets.js: (Line numbers: 26, 27, 28, 29, 30, 85, 86, 87, 95, 123, 125)
+Curtain/utils.js: (Line numbers: 50, 64, 76, 81, 85, 86)
+Curtain/find-targets.js: (Line numbers: 22, 23, 24, 25, 26, 29, 66, 67, 69, 127, 128, 129, 130, 131, 138, 138)
+sleeves.js: (Line number: 28)
+
+Potentially affected files on server 2-SpareServer (with line numbers):
+Curtain/utils.js: (Line numbers: 50, 64, 76, 81, 85, 86)
+Curtain/find-targets.js: (Line numbers: 22, 23, 24, 25, 26, 29, 66, 67, 69, 127, 128, 129, 130, 131, 138, 138)
+
+
+
+The cloud server (purchased server) functions have been moved to their own interface, ns.cloud.
+"ns.getPurchasedServerCost()" was removed.
+It has been automatically replaced with "ns.cloud.getServerCost()"
+
+"ns.purchaseServer()" was removed.
+It has been automatically replaced with "ns.cloud.purchaseServer()"
+
+"ns.getPurchasedServerUpgradeCost()" was removed.
+It has been automatically replaced with "ns.cloud.getServerUpgradeCost()"
+
+"ns.upgradePurchasedServer()" was removed.
+It has been automatically replaced with "ns.cloud.upgradeServer()"
+
+"ns.renamePurchasedServer()" was removed.
+It has been automatically replaced with "ns.cloud.renameServer()"
+
+"ns.deleteServer()" was removed.
+It has been automatically replaced with "ns.cloud.deleteServer()"
+
+"ns.getPurchasedServers()" was removed.
+It has been automatically replaced with "ns.cloud.getServerNames()"
+
+"ns.getPurchasedServerLimit()" was removed.
+It has been automatically replaced with "ns.cloud.getServerLimit()"
+
+"ns.getPurchasedServerMaxRam()" was removed.
+It has been automatically replaced with "ns.cloud.getRamLimit()"
+
+Usage of the following functions may have been affected:
+ns.getPurchasedServerCost
+ns.purchaseServer
+ns.getPurchasedServerUpgradeCost
+ns.upgradePurchasedServer
+ns.renamePurchasedServer
+ns.deleteServer
+ns.getPurchasedServers
+ns.getPurchasedServerLimit
+ns.getPurchasedServerMaxRam
+
+Potentially affected files on server home (with line numbers):
+custom-stats.js: (Line number: 32)
+Curtain/utils.js: (Line number: 94)
+Curtain/aps.js: (Line numbers: 9, 42, 47, 95, 145)
+aps.js: (Line numbers: 9, 38, 42, 64, 92)
+purchaseSpareServer.js: (Line numbers: 7, 13, 34, 47)
+
+Potentially affected files on server 1-SpareServer (with line numbers):
+Curtain/utils.js: (Line number: 94)
+custom-stats.js: (Line number: 32)
+
+Potentially affected files on server 2-SpareServer (with line numbers):
+Curtain/utils.js: (Line number: 94)
+
+
+
+We added a new feature called Dark Net. The "darkweb" server is a darknet server now.
+Some APIs that require the target host to be a normal server do not work with darkweb. This should not be a 
+problem with most scripts. The most potentially affected API is "ns.scan()". Darkweb does not appear in the 
+result of this API anymore. If you want to find darknet servers, you need to use "ns.dnet.probe()".
+
+
+
+Accessing the hacknet namespace incurred a one-time cost of 4 GB of RAM, and each hacknet API did not incur 
+RAM cost. Now the hacknet namespace does not incur RAM cost, but each hacknet API incurs a 0.5GB RAM cost.
+
+Usage of the following functions may have been affected:
+ns.hacknet.numNodes
+ns.hacknet.purchaseNode
+ns.hacknet.getPurchaseNodeCost
+ns.hacknet.getNodeStats
+ns.hacknet.upgradeLevel
+ns.hacknet.upgradeRam
+ns.hacknet.upgradeCore
+ns.hacknet.upgradeCache
+ns.hacknet.getLevelUpgradeCost
+ns.hacknet.getRamUpgradeCost
+ns.hacknet.getCoreUpgradeCost
+ns.hacknet.getCacheUpgradeCost
+ns.hacknet.numHashes
+ns.hacknet.hashCost
+ns.hacknet.spendHashes
+ns.hacknet.maxNumNodes
+ns.hacknet.hashCapacity
+ns.hacknet.getHashUpgrades
+ns.hacknet.getHashUpgradeLevel
+ns.hacknet.getStudyMult
+ns.hacknet.getTrainingMult
+
+Potentially affected files on server home (with line numbers):
+custom-stats.js: (Line numbers: 21, 22, 23)
+
+Potentially affected files on server 1-SpareServer (with line numbers):
+custom-stats.js: (Line numbers: 21, 22, 23)
+
+
+
+ns.sleeve.travel() did not cancel the sleeve's current task. It does now.
+
+Usage of the following functions may have been affected:
+ns.sleeve.travel
+
+Potentially affected files on server home (with line numbers):
+sleeves.js: (Line number: 54)
+
+Potentially affected files on server 1-SpareServer (with line numbers):
+sleeves.js: (Line number: 54)
+
+
+
+ns.cloud.purchaseServer() and ns.cloud.deleteServer() previously removed whitespace from the provided hostname inconsistently.
+They now use the hostname as provided.
+
+Usage of the following functions may have been affected:
+ns.cloud.purchaseServer
+ns.cloud.deleteServer
+
+Potentially affected files on server home (with line numbers):
+Curtain/aps.js: (Line number: 95)
+aps.js: (Line number: 64)
+purchaseSpareServer.js: (Line number: 13)
+
+
+
+ns.gang.getOtherGangInformation() was renamed to ns.gang.getAllGangInformation().
+The function was renamed because it returns information about all gangs, including the player's own gang.
+
+Usage of the following functions may have been affected:
+ns.gang.getOtherGangInformation
+
+Potentially affected files on server home (with line numbers):
+gang-management.js: (Line number: 296)
+
+Potentially affected files on server 1-SpareServer (with line numbers):
+gang-management.js: (Line number: 296)
+
+
+
+Task objects returned from ns.singularity.getCurrentWork() and ns.sleeve.getTask() previously had an optional
+promise property named either "completion" or "nextCompletion", depending on the task.
+Now, these task objects always include this property, and it is consistently named "nextCompletion".
+
+Usage of the following functions may have been affected:
+ns.singularity.getCurrentWork
+ns.sleeve.getTask
+
+Potentially affected files on server home (with line numbers):
+sleeves.js: (Line numbers: 48, 74)
+
+Potentially affected files on server 1-SpareServer (with line numbers):
+sleeves.js: (Line numbers: 48, 74)

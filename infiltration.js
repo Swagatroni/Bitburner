@@ -40,12 +40,12 @@ export async function main(ns) {
   for (let i = 0; i < Math.min(5, locations.length); i++) {
     const loc = locations[i];
     ns.print(
-      `\n${i + 1}. ${loc.name} (${ns.formatNumber(loc.score, 0)}):
+      `\n${i + 1}. ${loc.name} (${ns.format.number(loc.score, 0)}):
     City: ${loc.city}
     Difficulty: ${loc.difficulty}
     Clearance: ${loc.clearance}
-    SoA Rep: ${ns.formatNumber(loc.soaRep)}
-    Fac Rep: ${ns.formatNumber(loc.facRep)} `,
+    SoA Rep: ${ns.format.number(loc.soaRep)}
+    Fac Rep: ${ns.format.number(loc.facRep)} `,
     );
   }
 }

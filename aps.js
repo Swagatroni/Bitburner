@@ -57,7 +57,7 @@ export async function main(ns) {
       if (!ns.serverExists(server)) {
         while (!canBuyNew(targetRAM)) {
           ns.print(
-            `Waiting to buy ${server} @ ${ns.formatRam(targetRAM)}. Cash: $${ns.formatNumber(cash())}`,
+            `Waiting to buy ${server} @ ${ns.format.ram(targetRAM)}. Cash: $${ns.format.number(cash())}`,
           );
           await ns.sleep(3000);
         }
@@ -76,7 +76,7 @@ export async function main(ns) {
     const wealth = totalWealth();
     if (wealth < costOne) {
       ns.print(
-        `Wealth ${ns.formatNumber(wealth)} < ${ns.formatNumber(costOne)} (one upgrade to ${ns.formatRam(desiredRam)}).`,
+        `Wealth ${ns.format.number(wealth)} < ${ns.format.number(costOne)} (one upgrade to ${ns.format.ram(desiredRam)}).`,
       );
       return;
     }
@@ -109,7 +109,7 @@ export async function main(ns) {
       }
     }
     if (allMaxed) {
-      ns.tprint(`✅ All purchased servers maxed (${ns.formatRam(MAX_RAM)})`);
+      ns.tprint(`✅ All purchased servers maxed (${ns.format.ram(MAX_RAM)})`);
       break;
     }
 
@@ -127,7 +127,7 @@ export async function main(ns) {
       const sample = pservs[0];
       const cost = upgradeCost(sample, targetRAM);
       ns.tprint(
-        `➡ Next fleet target: ${ns.formatRam(targetRAM)} (upgrade ~${ns.formatNumber(cost)} each)`,
+        `➡ Next fleet target: ${ns.format.ram(targetRAM)} (upgrade ~${ns.format.number(cost)} each)`,
       );
     }
 

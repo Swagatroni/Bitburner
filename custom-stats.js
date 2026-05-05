@@ -30,7 +30,7 @@ export async function main(ns) {
         if (ns.serverExists(pservs[0])) {
           let size = ns.getServerMaxRam(pservs[0]);
           if (size < ns.getPurchasedServerMaxRam()) {
-            headers.push(`PServs (${ns.formatRam(size, 0)}):`);
+            headers.push(`PServs (${ns.format.ram(size, 0)}):`);
             values.push(serverUpgrades(ns));
           }
         }
@@ -39,7 +39,7 @@ export async function main(ns) {
       // Calculate script income
       headers.push("Scripts: ");
       values.push(
-        ns.formatNumber(ns.getTotalScriptIncome()[0].toPrecision(5), 2) + "/s",
+        ns.format.number(ns.getTotalScriptIncome()[0].toPrecision(5), 2) + "/s",
       );
 
       // Calculate stock portfolio
@@ -56,7 +56,7 @@ export async function main(ns) {
       }
 
       // Karma
-      let karma = ns.formatNumber(ns.heart.break());
+      let karma = ns.format.number(ns.heart.break());
 
       if (!ns.gang.inGang()) {
         headers.push("Karma: ");
@@ -65,18 +65,18 @@ export async function main(ns) {
         let info = ns.gang.getGangInformation();
         if (ns.gang.inGang() && info.territory < 1) {
           headers.push("Gang: ");
-          values.push(ns.formatNumber(info.territory * 100, 2) + "%");
+          values.push(ns.format.number(info.territory * 100, 2) + "%");
         }
       }
 
       // headers.push("Hacknet Income: ");
-      // values.push(ns.formatNumber(hacknetTotalProduction.toPrecision(5)) + '/s');
+      // values.push(ns.format.number(hacknetTotalProduction.toPrecision(5)) + '/s');
 
       // headers.push("Hacknet Profit: ");
-      // values.push(ns.nFormat(hacknetTotalProfit.toPrecision(5), "$0.0a"));
+      // values.push(ns.format.number(hacknetTotalProfit.toPrecision(5)));
 
       // headers.push("Script Experience: ");
-      // values.push(ns.nFormat(ns.getTotalScriptExpGain().toPrecision(5), "0.00a") + '/s');
+      // values.push(ns.format.number(ns.getTotalScriptExpGain().toPrecision(5)) + '/s');
 
       headers.push("Time: ");
       values.push(new Date().toLocaleTimeString());

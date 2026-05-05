@@ -30,10 +30,10 @@ export async function main(ns) {
       ns.print(`${faction.name}:`);
       ns.print(` - ${faction.numAugs} Augmentations`);
       if (faction.repGap > 0) {
-        ns.print(` - Rep Required: ${ns.formatNumber(faction.repReq)}`);
-        ns.print(` - Current Rep: ${ns.formatNumber(faction.currRep)}`);
+        ns.print(` - Rep Required: ${ns.format.number(faction.repReq)}`);
+        ns.print(` - Current Rep: ${ns.format.number(faction.currRep)}`);
       }
-      ns.print(` - Rep Gap: ${ns.formatNumber(faction.repGap)}`);
+      ns.print(` - Rep Gap: ${ns.format.number(faction.repGap)}`);
     }
   }
 }

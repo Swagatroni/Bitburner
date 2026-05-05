@@ -117,7 +117,7 @@ function printGangStats(ns, info, memberCount) {
 
 function printMoneyRate(ns) {
   const info = ns.gang.getGangInformation();
-  const totalMoney = ns.formatNumber(info.moneyGainRate * 5, 2);
+  const totalMoney = ns.format.number(info.moneyGainRate * 5, 2);
   ns.print(`Money Rate: $${totalMoney}/sec`);
 }
 
@@ -125,7 +125,7 @@ async function createGang(ns) {
   while (!ns.gang.inGang()) {
     const created = ns.gang.createGang("Slum Snakes");
     if (!created) {
-      ns.print(`Karma: ${ns.formatNumber(ns.heart.break())}`);
+      ns.print(`Karma: ${ns.format.number(ns.heart.break())}`);
       await ns.sleep(10000);
     }
   }
@@ -382,7 +382,7 @@ function autoPurchaseEquipment(ns, gangInfo) {
       if (cheapestMissing) {
         if (ns.gang.purchaseEquipment(member, cheapestMissing.name)) {
           ns.print(
-            `💰 ${member}: ${cheapestMissing.name} ($${ns.formatNumber(
+            `💰 ${member}: ${cheapestMissing.name} ($${ns.format.number(
               cheapestMissing.cost,
             )})`,
           );
@@ -399,7 +399,7 @@ function autoPurchaseEquipment(ns, gangInfo) {
   }
 
   if (purchaseCount > 0) {
-    ns.print(`Total: ${purchaseCount} items, $${ns.formatNumber(totalSpent)}`);
+    ns.print(`Total: ${purchaseCount} items, $${ns.format.number(totalSpent)}`);
   }
 
   return purchaseCount;

@@ -234,7 +234,7 @@ export async function main(ns) {
     const openLongs = postTrade.filter((s) => s.longShares > 0).length;
     const openShorts = postTrade.filter((s) => s.shortShares > 0).length;
     ns.print(
-      `${LOG_PREFIX} cash=${ns.formatNumber(cash, 2)} longs=${openLongs} shorts=${openShorts} shorting=${canShort ? "on" : "off"} shortCands=${shortCandidatesCount} soldL=${soldLongCount} soldS=${soldShortCount} buyL=${boughtLongCount} buyS=${boughtShortCount} mode=${has4SAPI ? "4S" : "no-4S"}`,
+      `${LOG_PREFIX} cash=${ns.format.number(cash, 2)} longs=${openLongs} shorts=${openShorts} shorting=${canShort ? "on" : "off"} shortCands=${shortCandidatesCount} soldL=${soldLongCount} soldS=${soldShortCount} buyL=${boughtLongCount} buyS=${boughtShortCount} mode=${has4SAPI ? "4S" : "no-4S"}`,
     );
 
     await ns.sleep(LOOP_MS);

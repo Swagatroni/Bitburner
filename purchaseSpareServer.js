@@ -16,7 +16,7 @@ export async function main(ns) {
 
   if (ns.getServerMaxRam(server) >= scriptRam * 1.2) {
     ns.tprint(
-      `${server} already has enough RAM (${ns.formatRam(ns.getServerMaxRam(server), 0)})`,
+      `${server} already has enough RAM (${ns.format.ram(ns.getServerMaxRam(server), 0)})`,
     );
     return null;
   }
@@ -39,9 +39,9 @@ export async function main(ns) {
     const desiredRam = Math.min(targetRAM, MAX_RAM);
     const cost = upgradeCost(server, desiredRam);
 
-    ns.print(`Current RAM: ${ns.formatRam(baseRam, 0)}`);
-    ns.print(`Target RAM:  ${ns.formatRam(desiredRam, 0)}`);
-    ns.print(`RAM Cost:    $${ns.formatNumber(cost)}`);
+    ns.print(`Current RAM: ${ns.format.ram(baseRam, 0)}`);
+    ns.print(`Target RAM:  ${ns.format.ram(desiredRam, 0)}`);
+    ns.print(`RAM Cost:    $${ns.format.number(cost)}`);
 
     if (cost <= cash() && desiredRam > baseRam) {
       if (ns.upgradePurchasedServer(server, desiredRam)) {
@@ -56,6 +56,6 @@ export async function main(ns) {
   }
 
   ns.tprint(
-    `Finished upgrading ${server}. Final RAM: ${ns.formatRam(baseRam, 0)}`,
+    `Finished upgrading ${server}. Final RAM: ${ns.format.ram(baseRam, 0)}`,
   );
 }

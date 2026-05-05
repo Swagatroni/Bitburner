@@ -54,7 +54,7 @@ export async function main(ns) {
       if (ok) {
         purchased++;
         ns.tprint(
-          `Purchased: ${aug} ($${ns.formatNumber(
+          `Purchased: ${aug} ($${ns.format.number(
             ns.singularity.getAugmentationPrice(aug),
           )})`,
         );

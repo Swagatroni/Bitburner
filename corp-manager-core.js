@@ -37,6 +37,7 @@ export async function runCorpManager(ns, mode = "floor") {
     Agriculture: [4, 5, 5, 14],
     Tobacco: [2, 4, 2, 2],
     Pharmaceutical: [2, 5, 4, 1],
+    Healthcare: [0, 0, 0, 0],
   };
 
   if (mode !== "floor" && mode !== "scale") {
@@ -64,17 +65,18 @@ export async function runCorpManager(ns, mode = "floor") {
 
     const [hardware, robots, aiCores, realEstate] = INDUSTRY_BONUS_WEIGHTS[
       info.type
-    ] || [2, 2, 1, 3];
+    ] || [1, 1, 1, 1];
     const sum = hardware + robots + aiCores + realEstate;
+    const hasBonusMaterialTargets = sum > 0;
 
     return {
       Name: divisionName,
       Industry: info.type,
       Outputs: outputs,
-      HardwarePercent: hardware / sum,
-      RobotsPercent: robots / sum,
-      AICoresPercent: aiCores / sum,
-      RealEstatePercent: realEstate / sum,
+      HardwarePercent: hasBonusMaterialTargets ? hardware / sum : 0,
+      RobotsPercent: hasBonusMaterialTargets ? robots / sum : 0,
+      AICoresPercent: hasBonusMaterialTargets ? aiCores / sum : 0,
+      RealEstatePercent: hasBonusMaterialTargets ? realEstate / sum : 0,
     };
   }
 
@@ -110,7 +112,7 @@ export async function runCorpManager(ns, mode = "floor") {
       }
       if (ns.getPlayer().money >= CORP_CREATION_COST) return;
       ns.print(
-        `[Startup] Waiting for corp creation funds: ${ns.formatNumber(ns.getPlayer().money)} / ${ns.formatNumber(CORP_CREATION_COST)}`,
+        `[Startup] Waiting for corp creation funds: ${ns.format.number(ns.getPlayer().money)} / ${ns.format.number(CORP_CREATION_COST)}`,
       );
       await ns.sleep(10000);
     }
@@ -132,7 +134,7 @@ export async function runCorpManager(ns, mode = "floor") {
       if (funds >= unlockCost) {
         CORP.unlockUpgrade("Smart Supply");
         ns.tprint("Purchased unlock: Smart Supply");
-        logPurchase(`Smart Supply unlock for ${ns.formatNumber(unlockCost)}`);
+        logPurchase(`Smart Supply unlock for ${ns.format.number(unlockCost)}`);
         return;
       }
 
@@ -259,12 +261,12 @@ export async function runCorpManager(ns, mode = "floor") {
     let extra = employeeCount % targetJobs.length;
 
     for (const job of allPossibleJobs) {
-      CORP.setAutoJobAssignment(divisionName, city, job, 0);
+      CORP.setJobAssignment(divisionName, city, job, 0);
     }
 
     for (const job of targetJobs) {
       const assign = base + (extra > 0 ? 1 : 0);
-      CORP.setAutoJobAssignment(divisionName, city, job, assign);
+      CORP.setJobAssignment(divisionName, city, job, assign);
       if (extra > 0) extra -= 1;
     }
   }
@@ -304,7 +306,7 @@ export async function runCorpManager(ns, mode = "floor") {
       if (funds >= cost + officeBuffer) {
         CORP.upgradeOfficeSize(division.Name, city, growBy);
         logPurchase(
-          `${division.Name} (${city}) office +${growBy} for ${ns.formatNumber(cost)}`,
+          `${division.Name} (${city}) office +${growBy} for ${ns.format.number(cost)}`,
         );
         office = CORP.getOffice(division.Name, city);
       }
@@ -328,7 +330,7 @@ export async function runCorpManager(ns, mode = "floor") {
       ) {
         CORP.purchaseWarehouse(division.Name, city);
         logPurchase(
-          `${division.Name} (${city}) warehouse for ${ns.formatNumber(whCost)}`,
+          `${division.Name} (${city}) warehouse for ${ns.format.number(whCost)}`,
         );
       }
       return;
@@ -339,7 +341,7 @@ export async function runCorpManager(ns, mode = "floor") {
       if (CORP.getCorporation().funds >= upCost + warehouseBuffer) {
         CORP.upgradeWarehouse(division.Name, city, 1);
         logPurchase(
-          `${division.Name} (${city}) warehouse +1 for ${ns.formatNumber(upCost)}`,
+          `${division.Name} (${city}) warehouse +1 for ${ns.format.number(upCost)}`,
         );
       }
     }
@@ -466,7 +468,7 @@ export async function runCorpManager(ns, mode = "floor") {
           marketingInvestment,
         );
         logPurchase(
-          `${division.Name} started product ${productName} for ${ns.formatNumber(designInvestment + marketingInvestment)}`,
+          `${division.Name} started product ${productName} for ${ns.format.number(designInvestment + marketingInvestment)}`,
         );
         return true;
       } catch (_) {
@@ -506,7 +508,7 @@ export async function runCorpManager(ns, mode = "floor") {
       if (worst) {
         CORP.discontinueProduct(division.Name, worst.name);
         ns.print(
-          `[Product] ${division.Name} retired ${worst.name} (rating ${ns.formatNumber(worst.rating, 3)}).`,
+          `[Product] ${division.Name} retired ${worst.name} (rating ${ns.format.number(worst.rating, 3)}).`,
         );
         tryStartProduct();
       }
@@ -523,7 +525,7 @@ export async function runCorpManager(ns, mode = "floor") {
       const whCost = CORP.getConstants().warehouseInitialCost;
       CORP.purchaseWarehouse(division.Name, START_CITY);
       logPurchase(
-        `${division.Name} (${START_CITY}) warehouse for ${ns.formatNumber(whCost)}`,
+        `${division.Name} (${START_CITY}) warehouse for ${ns.format.number(whCost)}`,
       );
     }
   }
@@ -541,7 +543,7 @@ export async function runCorpManager(ns, mode = "floor") {
             ? CORP.getWarehouse(division.Name, city).size
             : 0;
           ns.print(
-            `[${division.Name}] Expansion blocked until ${city} reaches floor | emp ${office.numEmployees}/${FLOOR_EMPLOYEES} | wh ${ns.formatNumber(whSize, 3)}/${FLOOR_WAREHOUSE_SIZE}`,
+            `[${division.Name}] Expansion blocked until ${city} reaches floor | emp ${office.numEmployees}/${FLOOR_EMPLOYEES} | wh ${ns.format.number(whSize, 3)}/${FLOOR_WAREHOUSE_SIZE}`,
           );
         }
         return;
@@ -557,7 +559,7 @@ export async function runCorpManager(ns, mode = "floor") {
     CORP.expandCity(division.Name, nextCity);
     CORP.purchaseWarehouse(division.Name, nextCity);
     logPurchase(
-      `${division.Name} expanded to ${nextCity} and bought warehouse for ${ns.formatNumber(expandCost + warehouseCost)}`,
+      `${division.Name} expanded to ${nextCity} and bought warehouse for ${ns.format.number(expandCost + warehouseCost)}`,
     );
   }
 
@@ -566,7 +568,7 @@ export async function runCorpManager(ns, mode = "floor") {
     createCorporation();
     await buySmartSupplyOnceAtStartup();
   } else if (!CORP.hasCorporation()) {
-    ns.tprint("No corporation found. Run corp-management.js first.");
+    ns.tprint("No corporation found. Run corp-floor.js first.");
     return;
   }
 
@@ -583,7 +585,7 @@ export async function runCorpManager(ns, mode = "floor") {
 
     if (shouldLogThisLoop()) {
       ns.print(
-        `[${mode}] Loop ${loopCount} START | funds ${ns.formatNumber(CORP.getCorporation().funds)} | target ${commonTargets.employees} emp / ${ns.formatNumber(commonTargets.warehouseSize)} wh`,
+        `[${mode}] Loop ${loopCount} START | funds ${ns.format.number(CORP.getCorporation().funds)} | target ${commonTargets.employees} emp / ${ns.format.number(commonTargets.warehouseSize)} wh`,
       );
       if (divisions.length === 0) {
         ns.print("[Loop] No divisions to manage yet.");

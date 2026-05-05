@@ -130,7 +130,7 @@ async function runscript(ns, script, server) {
     "diamond-hands.js",
     "corp-manager-core.js",
     "corp-scale.js",
-    "corp-management.js",
+    "corp-floor.js",
   ];
 
   const copied = await ns.scp(filesToCopy, server.name, "home");
@@ -151,8 +151,8 @@ async function runscript(ns, script, server) {
 
 async function manageCorpScripts(ns, server) {
   const hasCorp = ns.corporation.hasCorporation();
-  const desiredScript = hasCorp ? "corp-scale.js" : "corp-management.js";
-  const otherScript = hasCorp ? "corp-management.js" : "corp-scale.js";
+  const desiredScript = hasCorp ? "corp-scale.js" : "corp-floor.js";
+  const otherScript = hasCorp ? "corp-floor.js" : "corp-scale.js";
 
   if (ns.isRunning(otherScript, server.name)) {
     ns.scriptKill(otherScript, server.name);

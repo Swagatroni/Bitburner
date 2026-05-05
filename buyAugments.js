@@ -59,14 +59,14 @@ export async function main(ns) {
       const money = ns.getServerMoneyAvailable("home");
       const rep = ns.singularity.getFactionRep(aug.faction);
       ns.print(
-        `Checking: ${aug.name} | Price: $${ns.formatNumber(aug.price)} | Rep: ${ns.formatNumber(rep)}/${ns.formatNumber(aug.repReq)} | Money: $${ns.formatNumber(money)}`,
+        `Checking: ${aug.name} | Price: $${ns.format.number(aug.price)} | Rep: ${ns.format.number(rep)}/${ns.format.number(aug.repReq)} | Money: $${ns.format.number(money)}`,
       );
       if (rep >= aug.repReq && money >= aug.price) {
         ns.print(`Attempting to purchase ${aug.name} from ${aug.faction}...`);
         const ok = ns.singularity.purchaseAugmentation(aug.faction, aug.name);
         if (ok) {
           ns.tprint(
-            `Purchased: ${aug.name} from ${aug.faction} ($${ns.formatNumber(
+            `Purchased: ${aug.name} from ${aug.faction} ($${ns.format.number(
               aug.price,
             )})`,
           );

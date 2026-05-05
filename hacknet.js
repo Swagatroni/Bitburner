@@ -64,7 +64,7 @@ export async function main(ns) {
     }
 
     log(
-      `Cheapest Upgrade: ${nodes[0].index}, ${upgradeType}, ${ns.formatNumber(cheapest)}`,
+      `Cheapest Upgrade: ${nodes[0].index}, ${upgradeType}, ${ns.format.number(cheapest)}`,
     );
 
     await upgradeNode(upgradeType, nodes);

@@ -37,7 +37,7 @@ export async function main(ns) {
       const ok = ns.sleeve.purchaseSleeveAug(sleeveIndex, aug.name);
       if (ok) {
         ns.print(
-          `SLEEVE-${sleeveIndex} bought ${aug.name} for $${ns.formatNumber(aug.cost)}`,
+          `SLEEVE-${sleeveIndex} bought ${aug.name} for $${ns.format.number(aug.cost)}`,
         );
         money -= aug.cost;
       }

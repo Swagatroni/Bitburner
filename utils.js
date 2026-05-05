@@ -136,7 +136,7 @@ export function stockPortfolio(ns) {
   }
 
   // Print the final value to the terminal
-  ns.print("Stock Portfolio Value: " + ns.formatNumber(totalStockValue));
+  ns.print("Stock Portfolio Value: " + ns.format.number(totalStockValue));
 
   return totalStockValue;
 }
