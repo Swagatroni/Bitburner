@@ -10,7 +10,7 @@ import { getPservs, serverUpgrades } from "./Curtain/utils.js";
 /** @param {NS} ns **/
 export async function main(ns) {
   ns.disableLog("ALL");
-  ns.ui.openTail();
+  // ns.ui.openTail();
 
   const CFG = {
     updateIntervalMs: 1000, // How often to check for updates
@@ -60,7 +60,9 @@ export async function main(ns) {
     try {
       const pservs = getPservs(ns);
       let size = ns.getServerMaxRam(pservs[0]) || null;
-      ns.print(`    PServs (${ns.format.ram(size, 0)}):  ${serverUpgrades(ns)}`);
+      ns.print(
+        `    PServs (${ns.format.ram(size, 0)}):  ${serverUpgrades(ns)}`,
+      );
     } catch (error) {}
     ns.print(` `);
     ns.print(`    ${new Date().toLocaleTimeString()}`);
