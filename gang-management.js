@@ -293,7 +293,7 @@ function manageClashes(ns) {
     "The Black Hand",
   ];
 
-  const others = ns.gang.getOtherGangInformation();
+  const others = ns.gang.getAllGangInformation();
   const enemies = knownGangs
     .filter((g) => g !== info.faction)
     .filter((g) => others[g]?.power > 10)
