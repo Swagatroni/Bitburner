@@ -21,7 +21,6 @@ export async function main(ns) {
   const TARGET_CITY = "Volhaven";
   const UNI = "ZB Institute of Technology";
   const COURSE = "Algorithms";
-
   const TARGET_GYM = "Millenium Fitness Gym";
 
   function buyAugs(sleeveIndex) {

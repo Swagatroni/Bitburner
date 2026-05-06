@@ -20,7 +20,7 @@ export async function main(ns) {
         { name: "launch-fleets.js", threads: 1, args: [] },
         { name: "gang-management.js", threads: 1, args: [] },
         { name: "bladeburner.js", threads: 1, args: [] },
-        { name: "sleeves.js", threads: 1, args: [] },
+        { name: "Curtain/sleeve-management.js", threads: 1, args: [] },
         { name: "watchtower.js", threads: 1, args: [] },
         { name: "custom-stats.js", threads: 1, args: [] },
       ],
