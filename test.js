@@ -1,9 +1,19 @@
-const details = {
-  data: "028",
+const deepGreen = async (ns, hostname, details) => {
+  const heartbleed = await ns.dnet.heartbleed(hostname);
+  try {
+    let arr = [];
+    while (true) {
+      for (let i = 0; i < 10; i++) {
+        let password = i.toString().repeat(details.passwordLength);
+        const result = await ns.dnet.authenticate(hostname, password);
+        if (!result.success) {
+          const data = JSON.parse(heartbleed.logs).data.split(",");
+          if (data[0] || data[1]) arr.push(i);
+        } else return true;
+      }
+    }
+  } catch (e) {}
 };
 
-for (let i = 0; i <= 20; i++) {
-  if (i < 10) i = "0" + i;
-
-  console.log(i.toString());
-}
+let data = [0, 0];
+if (data[0] || data[1]) console.log("true");

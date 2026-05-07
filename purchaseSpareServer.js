@@ -10,7 +10,7 @@ export async function main(ns) {
 
   while (!ns.serverExists(server)) {
     ns.print(`Purchasing server: ${server} with 2GB RAM`);
-    ns.purchaseServer(server, 2);
+    ns.cloud.purchaseServer(server, 2);
     await ns.sleep(500);
   }
 
