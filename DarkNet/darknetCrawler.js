@@ -93,78 +93,55 @@ const deskMemo = async (ns, hostname, details) => {
   const result = await ns.dnet.authenticate(hostname, password.at(-1));
   return result.success;
 };
-
 const octantVoxel = async (ns, hostname, details) => {
+  const base = details.data.split(",")[0];
+  let num = details.data.split(",")[1].split("").reverse();
+  let password = 0;
+
+  for (let i = 0; i < num.length; i++) {
+    password += parseInt(num[i]) * Math.pow(base, i);
+  }
+  const result = await ns.dnet.authenticate(hostname, password.toString());
+  return result.success;
+};
+const PHP = async (ns, hostname, details) => {
+  const shuffle = [
+    [0, 1, 2],
+    [0, 2, 1],
+    [1, 0, 2],
+    [1, 2, 0],
+    [2, 0, 1],
+    [2, 1, 0],
+  ];
+  let num = details.data.split("");
+
+  for (let i = 0; i < shuffle.length; i++) {
+    let temp = "";
+    for (let j = 0; j < shuffle[i].length; j++) {
+      temp += num[shuffle[i][j]];
+    }
+    const result = await ns.dnet.authenticate(hostname, temp);
+    if (result.success) return true;
+  }
   return false;
 };
 const accountsManager = async (ns, hostname, details) => {
+  for (let i = 0; i <= 100; i++) {
+    if (i < 10) i = "0" + i;
+
+    const result = await ns.dnet.authenticate(hostname, i.toString());
+    if (result.success) return true;
+  }
+
   return false;
 };
+
 const freshInstall = async (ns, hostname, details) => {
   return false;
 };
 const bellaCuore = async (ns, hostname, details) => {
   return false;
 };
-const PHP = async (ns, hostname, details) => {
-  return false;
-};
 const pr0verFl0 = async (ns, hostname, details) => {
   return false;
-};
-
-test = {
-  isOnline: true,
-  isConnectedToCurrentServer: true,
-  hasSession: false,
-  modelId: "PHP 5.4",
-  passwordHint: "The password is shuffled 028",
-  data: "028",
-  logTrafficInterval: 22.870000000000005,
-  passwordLength: 3,
-  passwordFormat: "numeric",
-};
-test = {
-  isOnline: true,
-  isConnectedToCurrentServer: true,
-  hasSession: false,
-  modelId: "FreshInstall_1.0",
-  passwordHint: "It's still the factory settings",
-  data: "",
-  logTrafficInterval: 31,
-  passwordLength: 5,
-  passwordFormat: "numeric",
-};
-test = {
-  isOnline: true,
-  isConnectedToCurrentServer: true,
-  hasSession: false,
-  modelId: "OctantVoxel",
-  passwordHint: "the password is the base 6 number 1203 in base 10",
-  data: "6,1203",
-  logTrafficInterval: 20.683,
-  passwordLength: 3,
-  passwordFormat: "numeric",
-};
-test = {
-  isOnline: true,
-  isConnectedToCurrentServer: true,
-  hasSession: false,
-  modelId: "AccountsManager_4.2",
-  passwordHint: "The password is a number between 0 and 100",
-  data: "",
-  logTrafficInterval: 22.870000000000005,
-  passwordLength: 2,
-  passwordFormat: "numeric",
-};
-test = {
-  isOnline: true,
-  isConnectedToCurrentServer: true,
-  hasSession: false,
-  modelId: "Pr0verFl0",
-  passwordHint: "Warning: password buffer is 5 bytes",
-  data: "",
-  logTrafficInterval: 20.683,
-  passwordLength: 5,
-  passwordFormat: "alphanumeric",
 };
