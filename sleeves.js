@@ -5,8 +5,6 @@ export async function main(ns) {
   ns.disableLog("ALL");
 
   // ---- Flags ----
-  // If multiple are passed, we'll use this priority:
-  // blade > faction > training > hack
   const MODE =
     ns.args.includes("blade") || ns.args.includes("-b")
       ? "blade"

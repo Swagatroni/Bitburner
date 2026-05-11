@@ -4,20 +4,15 @@ export async function main(ns) {
 
   while (true) {
     const myFiles = ns.ls("home");
+    const scriptName = ns.getScriptName();
     const nearbyServers = ns.dnet.probe();
 
     for (const hostname of nearbyServers) {
       const authenticationSuccessful = await serverSolver(ns, hostname);
       if (!authenticationSuccessful) continue;
 
-      ns.print(
-        `Authenticated: ${ns.dnet.getServerAuthDetails(hostname).modelId}`,
-      );
-
-      ns.scp(ns.getScriptName(), hostname);
-      ns.exec(ns.getScriptName(), hostname, {
-        preventDuplicates: true,
-      });
+      const deployed = await deployCrawler(ns, hostname, scriptName);
+      if (!deployed) ns.print(`Deploy failed on ${hostname}`);
     }
 
     const hostname = ns.getServer().hostname;
@@ -30,11 +25,15 @@ export async function main(ns) {
 
     for (const file of files) {
       if (file.endsWith(".cache")) {
-        ns.dnet.openCache(file, true);
+        ns.dnet.openCache(file);
         continue;
       }
 
-      if (!myFiles.includes(file) && !file.endsWith(".exe")) {
+      if (
+        !myFiles.includes(file) &&
+        !file.endsWith(".exe") &&
+        !file.endsWith(".cct")
+      ) {
         if (ns.scp(file, "home")) ns.tprint(`Transferred: ${file}`);
       }
     }
@@ -48,10 +47,19 @@ export async function main(ns) {
 /**
  * @param {NS} ns
  * @param {string} hostname
+ * @param {string} scriptName
  */
+const deployCrawler = async (ns, hostname, scriptName) => {
+  const copied = await ns.scp([scriptName, "passwords.json"], hostname);
+  if (!copied) return false;
+
+  const pid = ns.exec(scriptName, hostname, {
+    preventDuplicates: true,
+  });
+  return pid !== 0;
+};
 export const serverSolver = async (ns, hostname) => {
   const details = ns.dnet.getServerAuthDetails(hostname);
-  ns.scp("passwords.json", hostname);
 
   if (details.hasSession) return true;
   if (!details.isConnectedToCurrentServer || !details.isOnline) return false;
@@ -97,10 +105,107 @@ export const serverSolver = async (ns, hostname) => {
  * @param {string} hostname
  * @param {object} details
  */
+// HELPERS
+const getCharset = (passwordFormat) => {
+  switch (passwordFormat) {
+    case "numeric":
+      return "0123456789";
+    case "alphabetic":
+      return "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    case "alphanumeric":
+      return "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    default:
+      return "";
+  }
+};
+const parseFeedback = (logs, attemptedPassword, parser) => {
+  if (!Array.isArray(logs)) return null;
+
+  for (const line of logs) {
+    if (typeof line !== "string") continue;
+
+    try {
+      const parsed = JSON.parse(line);
+      if (!parsed || parsed.passwordAttempted !== attemptedPassword) continue;
+
+      const feedback = parser(parsed.data, parsed);
+      if (feedback) return feedback;
+    } catch (e) {}
+  }
+
+  return null;
+};
+const getFeedback = async (
+  ns,
+  hostname,
+  attemptedPassword,
+  parser,
+  successFactory,
+) => {
+  for (let i = 0; i < 3; i++) {
+    const result = await ns.dnet.authenticate(hostname, attemptedPassword);
+    if (result.success)
+      return {
+        success: true,
+        ...(successFactory ? successFactory(attemptedPassword) : {}),
+      };
+
+    const heartbleed = await ns.dnet.heartbleed(hostname, { logsToCapture: 6 });
+    const feedback = parseFeedback(heartbleed.logs, attemptedPassword, parser);
+    if (feedback) return { success: false, ...feedback };
+  }
+
+  return null;
+};
+const tryPassword = async (ns, hostname, password) => {
+  const result = await ns.dnet.authenticate(hostname, password);
+  if (result.success) {
+    const data = {
+      server: hostname,
+      password: password,
+      model: ns.dnet.getServerAuthDetails(hostname).modelId,
+    };
+
+    try {
+      const filePath = "passwords.json";
+      const raw = ns.read(filePath, "home");
+      const passwords = JSON.parse(raw);
+
+      if (!Array.isArray(passwords.known)) passwords.known = [];
+
+      passwords.known.push(data);
+      ns.write(filePath, JSON.stringify(passwords, null, 4), "w", "home");
+      ns.print(
+        `Successfully wrote data to passwords.json -> known: ${hostname}`,
+      );
+
+      return true;
+    } catch (e) {
+      ns.print(`Failed to write password data for ${hostname}: ${e}`);
+    }
+  }
+  return false;
+};
+
+// Model Specific Parsers
+const parseDeepGreenFeedbackData = (data) => {
+  const [exactRaw, misplacedRaw] = String(data ?? "").split(",");
+  const exact = Number(exactRaw);
+  const misplaced = Number(misplacedRaw);
+  if (!Number.isFinite(exact) || !Number.isFinite(misplaced)) return null;
+  return { exact, misplaced };
+};
+const parseNilFeedbackData = (data) => {
+  const matches = String(data ?? "")
+    .split(",")
+    .map((value) => value.trim() === "yes");
+  if (matches.length === 0) return null;
+  return { matches };
+};
+
+// Model Specific Solvers
 const zeroLogon = async (ns, hostname, details) => {
-  const result = await ns.dnet.authenticate(hostname, "");
-  // TODO: store discovered passwords somewhere safe, in case we need them later
-  return result.success;
+  return await tryPassword(ns, hostname, "");
 };
 const cloudBlare = async (ns, hostname, details) => {
   let password = "";
@@ -110,8 +215,7 @@ const cloudBlare = async (ns, hostname, details) => {
     if (char >= "0" && char <= "9") password += char;
   }
 
-  const result = await ns.dnet.authenticate(hostname, password);
-  return result.success;
+  return await tryPassword(ns, hostname, password);
 };
 const PHP = async (ns, hostname, details) => {
   const permutations = [
@@ -129,8 +233,7 @@ const PHP = async (ns, hostname, details) => {
     for (let j = 0; j < permutations[i].length; j++) {
       temp += num[permutations[i][j]];
     }
-    const result = await ns.dnet.authenticate(hostname, temp);
-    if (result.success) return true;
+    return await tryPassword(ns, hostname, temp);
   }
   return false;
 };
@@ -138,16 +241,7 @@ const deskMemo = async (ns, hostname, details) => {
   const hint = details.passwordHint;
   let password = hint.split(" ");
 
-  const result = await ns.dnet.authenticate(hostname, password.at(-1));
-  return result.success;
-};
-const accountsManager = async (ns, hostname, details) => {
-  for (let i = 0; i <= 100; i++) {
-    const result = await ns.dnet.authenticate(hostname, i.toString());
-    if (result.success) return true;
-  }
-
-  return false;
+  return await tryPassword(ns, hostname, password.at(-1));
 };
 const octantVoxel = async (ns, hostname, details) => {
   const base = details.data.split(",")[0];
@@ -157,8 +251,7 @@ const octantVoxel = async (ns, hostname, details) => {
   for (let i = 0; i < num.length; i++) {
     password += parseInt(num[i]) * Math.pow(base, i);
   }
-  const result = await ns.dnet.authenticate(hostname, password.toString());
-  return result.success;
+  return await tryPassword(ns, hostname, password.toString());
 };
 const bellaCuore = async (ns, hostname, details) => {
   const numerals = {
@@ -184,70 +277,148 @@ const bellaCuore = async (ns, hostname, details) => {
       password += value;
     }
   }
-  const result = await ns.dnet.authenticate(hostname, password.toString());
-  return result.success;
+  return await tryPassword(ns, hostname, password.toString());
 };
 const freshInstall = async (ns, hostname, details) => {
-  const rawData = ns.read("passwords.json");
+  const rawData = ns.read("passwords.json", "home");
   if (rawData) {
-    const data = JSON.parse(rawData);
-    for (const key in data.default) {
-      const result = await ns.dnet.authenticate(hostname, data.default[key]);
-      if (result.success) return result.success;
-    }
+    try {
+      const data = JSON.parse(rawData);
+      for (const key in data.default) {
+        return await tryPassword(ns, hostname, data.default[key]);
+      }
+    } catch (e) {}
   }
   return false;
 };
 const laika4 = async (ns, hostname, details) => {
-  const rawData = ns.read("passwords.json");
+  const rawData = ns.read("passwords.json", "home");
   if (rawData) {
-    const data = JSON.parse(rawData);
-    for (const key in data.dogNames) {
-      const result = await ns.dnet.authenticate(hostname, data.dogNames[key]);
-      if (result.success) return result.success;
-    }
+    try {
+      const data = JSON.parse(rawData);
+      for (const key in data.dogNames) {
+        return await tryPassword(ns, hostname, data.dogNames[key]);
+      }
+    } catch (e) {}
   }
   return false;
 };
+const deepGreen = async (ns, hostname, details) => {
+  const length = details.passwordLength;
+  const alphabet = getCharset(details.passwordFormat);
 
-const factoriOs = async (ns, hostname, details) => {
-  for (let i = 10; i < 100; i++) {
-    await ns.dnet.authenticate(hostname, i.toString());
-    const heartbleed = await ns.dnet.heartbleed(hostname);
+  const counts = new Map();
+  for (const char of alphabet) {
+    const guess = char.repeat(length);
+    const feedback = await getFeedback(
+      ns,
+      hostname,
+      guess,
+      parseDeepGreenFeedbackData,
+      (effort) => ({ exact: effort.length, misplaced: 0 }),
+    );
+    if (!feedback) continue;
+    if (feedback.success) return true;
+
+    const count = feedback.exact + feedback.misplaced;
+    if (count > 0) counts.set(char, count);
   }
-  try {
-    const data = JSON.parse(heartbleed.logs).data.split(",");
-    if (!result.success) {
-      if (data[0] || data[1]) arr.push(i);
-    } else return true;
-  } catch (e) {}
+
+  const totalKnown = [...counts.values()].reduce((sum, n) => sum + n, 0);
+  if (totalKnown !== length) return false;
+
+  let filler = null;
+  for (const char of alphabet) {
+    if (!counts.has(char)) {
+      filler = char;
+      break;
+    }
+  }
+  if (filler === null) return false;
+
+  const solved = Array(length).fill(null);
+  let exactFixed = 0;
+
+  for (const [char, count] of counts.entries()) {
+    let remaining = count;
+
+    for (let i = 0; i < length && remaining > 0; i++) {
+      if (solved[i] !== null) continue;
+
+      const guess = solved.map((value) => value ?? filler);
+      guess[i] = char;
+
+      const feedback = await getFeedback(
+        ns,
+        hostname,
+        guess.join(""),
+        parseDeepGreenFeedbackData,
+        (effort) => ({ exact: effort.length, misplaced: 0 }),
+      );
+      if (!feedback) continue;
+      if (feedback.success) return true;
+
+      if (feedback.exact > exactFixed) {
+        solved[i] = char;
+        exactFixed += 1;
+        remaining -= 1;
+      }
+    }
+  }
+
+  if (solved.some((char) => char === null)) return false;
+
+  const password = solved.join("");
+  return await ns.dnet.authenticate(hostname, password);
+};
+const nil = async (ns, hostname, details) => {
+  const length = details.passwordLength;
+  const alphabet = getCharset(details.passwordFormat);
+
+  if (!Number.isFinite(length) || length <= 0 || !alphabet) return false;
+
+  const filler = alphabet[0];
+  const solved = Array(length).fill(filler);
+
+  for (let i = 0; i < length; i++) {
+    let found = false;
+
+    for (const char of alphabet) {
+      solved[i] = char;
+      const guess = solved.join("");
+      const feedback = await getFeedback(
+        ns,
+        hostname,
+        guess,
+        parseNilFeedbackData,
+        (effort) => ({ matches: Array(effort.length).fill(true) }),
+      );
+
+      if (!feedback) continue;
+      if (feedback.success) return true;
+
+      if (feedback.matches[i]) {
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) return false;
+  }
+
+  return await ns.dnet.authenticate(hostname, solved.join(""));
+};
+
+// Unfinished Solvers
+const accountsManager = async (ns, hostname, details) => {
+  return false;
+};
+const factoriOs = async (ns, hostname, details) => {
   return false;
 };
 const pr0verFl0 = async (ns, hostname, details) => {
   return false;
 };
-const nil = async (ns, hostname, details) => {
-  return false;
-};
 const openWebAccessPoint = async (ns, hostname, details) => {
-  return false;
-};
-const deepGreen = async (ns, hostname, details) => {
-  const heartbleed = await ns.dnet.heartbleed(hostname, { logsToCapture: 3 });
-  try {
-    let arr = [];
-    for (let i = 0; i < 10; i++) {
-      let password = i.toString().repeat(details.passwordLength);
-      const result = await ns.dnet.authenticate(hostname, password);
-      if (!result.success) {
-        const data = JSON.parse(heartbleed.logs).data.split(",");
-        // ns.tprint(`Attempted: ${password}`);
-        // ns.tprint(`Data: ${data}`);
-        if (data[0] || data[1]) arr.push(i);
-      } else return true;
-    }
-    // ns.tprint(hostname);
-    // ns.tprint(`DATA: ${arr}`);
-  } catch (e) {}
   return false;
 };

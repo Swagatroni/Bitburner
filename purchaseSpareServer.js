@@ -31,7 +31,7 @@ export async function main(ns) {
   }
 
   function upgradeCost(server, desiredRam) {
-    const cost = ns.getPurchasedServerUpgradeCost(server, desiredRam);
+    const cost = ns.cloud.getServerUpgradeCost(server, desiredRam);
     return Number.isFinite(cost) ? cost : Infinity;
   }
 
@@ -44,7 +44,7 @@ export async function main(ns) {
     ns.print(`RAM Cost:    $${ns.format.number(cost)}`);
 
     if (cost <= cash() && desiredRam > baseRam) {
-      if (ns.upgradePurchasedServer(server, desiredRam)) {
+      if (ns.cloud.upgradeServer(server, desiredRam)) {
         ns.tprint(`Upgraded ${server} to ${desiredRam} RAM`);
         baseRam = desiredRam;
         if (targetRAM > scriptRam) break;

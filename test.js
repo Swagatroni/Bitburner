@@ -1,19 +1,20 @@
-const deepGreen = async (ns, hostname, details) => {
-  const heartbleed = await ns.dnet.heartbleed(hostname);
-  try {
-    let arr = [];
-    while (true) {
-      for (let i = 0; i < 10; i++) {
-        let password = i.toString().repeat(details.passwordLength);
-        const result = await ns.dnet.authenticate(hostname, password);
-        if (!result.success) {
-          const data = JSON.parse(heartbleed.logs).data.split(",");
-          if (data[0] || data[1]) arr.push(i);
-        } else return true;
-      }
-    }
-  } catch (e) {}
+const fs = require("fs");
+
+const data = {
+  server: "ultra@genesis",
+  password: "19819",
+  model: "NIL",
 };
 
-let data = [0, 0];
-if (data[0] || data[1]) console.log("true");
+const filePath = "passwords.json";
+const raw = fs.readFileSync(filePath, "utf8");
+const passwords = JSON.parse(raw);
+
+if (!Array.isArray(passwords.known)) {
+  passwords.known = [];
+}
+
+passwords.known.push(data);
+
+fs.writeFileSync(filePath, JSON.stringify(passwords, null, 4));
+console.log("Successfully wrote data to passwords.json -> known");

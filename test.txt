@@ -13,17 +13,6 @@ test = {
   isOnline: true,
   isConnectedToCurrentServer: true,
   hasSession: false,
-  modelId: "NIL",
-  passwordHint: "you are one who's'nt authorized",
-  data: "",
-  logTrafficInterval: 22.870000000000005,
-  passwordLength: 5,
-  passwordFormat: "numeric",
-};
-test = {
-  isOnline: true,
-  isConnectedToCurrentServer: true,
-  hasSession: false,
   modelId: "OpenWebAccessPoint",
   passwordHint: "(I'm busy browsing social media at the cafe)",
   data: "",
@@ -35,15 +24,13 @@ test = {
   isOnline: true,
   isConnectedToCurrentServer: true,
   hasSession: false,
-  modelId: "DeepGreen",
-  passwordHint: "Only a true master may pass",
+  modelId: "NIL",
+  passwordHint: "you are one who's'nt authorized",
   data: "",
-  logTrafficInterval: 20.683,
-  passwordLength: 3,
+  logTrafficInterval: 22.870000000000005,
+  passwordLength: 5,
   passwordFormat: "numeric",
-  message:
-    "Hint: 0 symbols are match exactly,  and 2 symbols match but are in the wrong place.",
-  data: [0, 2],
-  passwordAttempted: 790,
-  code: 401,
-};
+message: that wasn't right
+data: yesn't,yesn't,yesn't,yesn't,yesn't,yesn't
+passwordAttempted: 000000
+code: 401};

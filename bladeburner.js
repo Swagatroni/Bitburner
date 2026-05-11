@@ -151,9 +151,9 @@ export async function main(ns) {
 
   function pickFromPriority(type, priorityList, minChance) {
     const available = new Set(
-      type === "Operation"
+      type === "Operations"
         ? bb.getOperationNames()
-        : type === "Contract"
+        : type === "Contracts"
           ? bb.getContractNames()
           : [],
     );
@@ -188,10 +188,10 @@ export async function main(ns) {
     if (remaining < 1) return null; // “more than 1”
     if (bb.getRank() < reqRank) return null;
 
-    const ch = getChance("BlackOps", opName);
+    const ch = getChance("Black Operations", opName);
     if (ch.min < CFG.minBlackOpSuccess) return null;
 
-    return { type: "BlackOps", name: opName, remaining, ch };
+    return { type: "Black Operations", name: opName, remaining, ch };
   }
 
   async function joinBladeburner() {

@@ -129,7 +129,7 @@ export async function runCorpManager(ns, mode = "floor") {
     if (CORP.hasUnlock("Smart Supply")) return;
 
     while (!CORP.hasUnlock("Smart Supply")) {
-      const unlockCost = CORP.getUnlockUpgradeCost("Smart Supply");
+      const unlockCost = CORP.getUnlockCost("Smart Supply");
       const funds = CORP.getCorporation().funds;
       if (funds >= unlockCost) {
         CORP.unlockUpgrade("Smart Supply");
