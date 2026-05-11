@@ -1,20 +1,14 @@
-const fs = require("fs");
+/** @param {NS} ns */
+export async function main(ns) {
+  ns.disableLog("ALL");
 
-const data = {
-  server: "ultra@genesis",
-  password: "19819",
-  model: "NIL",
-};
+  while (1) {
+    const data1 = ns.readPort(1);
+    const data2 = ns.readPort(2);
 
-const filePath = "passwords.json";
-const raw = fs.readFileSync(filePath, "utf8");
-const passwords = JSON.parse(raw);
+    if (data1) ns.tprint(`Port 1 (Write): ${data1}`);
+    if (data2) ns.tprint(`Port 2 (TryWrite): ${data2}`);
 
-if (!Array.isArray(passwords.known)) {
-  passwords.known = [];
+    await ns.sleep(1000);
+  }
 }
-
-passwords.known.push(data);
-
-fs.writeFileSync(filePath, JSON.stringify(passwords, null, 4));
-console.log("Successfully wrote data to passwords.json -> known");

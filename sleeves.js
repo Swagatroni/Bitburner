@@ -106,7 +106,7 @@ export async function main(ns) {
       let target = null;
       if (
         currentTask?.type === "FACTION" &&
-        currentTask.factionWorkType === "Hacking"
+        currentTask.factionWorkType === "hacking"
       ) {
         const currentFaction = factionAssignments.find(
           (candidate) => candidate.name === currentTask.factionName,
@@ -129,8 +129,8 @@ export async function main(ns) {
       const already =
         currentTask?.type === "FACTION" &&
         currentTask.factionName === target.name &&
-        currentTask.factionWorkType === "Hacking";
-      if (!already) ns.sleeve.setToFactionWork(s, target.name, "Hacking");
+        currentTask.factionWorkType === "hacking";
+      if (!already) ns.sleeve.setToFactionWork(s, target.name, "hacking");
 
       continue;
     }

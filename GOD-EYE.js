@@ -42,6 +42,7 @@ export async function main(ns) {
       { name: "purchaseSpareServer.js", threads: 1, args: [] },
       { name: "train.js", threads: 1, args: [] },
       { name: "hacknet.js", threads: 1, args: [] },
+      { name: "darknetCrawler.js", threads: 1, args: [] },
       // { name: "diamond-hands.js", threads: 1, args: [] },
       // { name: "aps.js", threads: 1, args: [] },
     ],

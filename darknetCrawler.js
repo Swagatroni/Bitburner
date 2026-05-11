@@ -1,47 +1,105 @@
 /** @param {NS} ns */
+const port = 1;
+
 export async function main(ns) {
   ns.disableLog("ALL");
 
   while (true) {
-    const myFiles = ns.ls("home");
     const scriptName = ns.getScriptName();
     const nearbyServers = ns.dnet.probe();
+    let passwordKnown = false;
+    let passwordChanged = false;
 
     for (const hostname of nearbyServers) {
-      const authenticationSuccessful = await serverSolver(ns, hostname);
-      if (!authenticationSuccessful) continue;
+      const raw = ns.read("passwords.json");
+      const passwords = JSON.parse(raw);
+
+      const serverData = passwords.known.find(
+        (entry) => entry.server === hostname,
+      );
+
+      if (serverData) {
+        passwordKnown = true;
+        ns.print(`Known password for ${hostname}. Attempting to connect...`);
+        const result = ns.dnet.connectToSession(hostname, serverData.password);
+
+        if (!result.success) passwordChanged = true;
+      }
+
+      if (!passwordKnown || passwordChanged) {
+        const authenticationSuccessful = await serverSolver(ns, hostname);
+        if (!authenticationSuccessful) continue;
+      }
 
       const deployed = await deployCrawler(ns, hostname, scriptName);
       if (!deployed) ns.print(`Deploy failed on ${hostname}`);
     }
 
-    const hostname = ns.getServer().hostname;
-    if (hostname === "home") {
-      await ns.sleep(1000);
+    const isHomeServer = ns.getServer().hostname === "home";
+
+    if (isHomeServer) await homeServer(ns, ns.getHostname());
+    else await darknetServer(ns, ns.getHostname());
+
+    await ns.sleep(1000);
+  }
+}
+
+async function homeServer(ns, hostname) {
+  while (true) {
+    const receiverPort = ns.getPortHandle(port);
+    if (!receiverPort.empty()) {
+      try {
+        const msg = receiverPort.read();
+        const data = JSON.parse(msg);
+
+        const filePath = "passwords.json";
+        const raw = ns.read(filePath, "home");
+        const passwords = JSON.parse(raw);
+
+        if (!Array.isArray(passwords.known)) passwords.known = [];
+
+        const serverData = passwords.known.find(
+          (entry) => entry.server === hostname,
+        );
+
+        if (!serverData) {
+          passwords.known.push(data);
+          ns.write(filePath, JSON.stringify(passwords, null, 4), "w", "home");
+          ns.print(`New password added (${hostname})`);
+        } else if (serverData.password !== data.password) {
+          serverData.password = data.password;
+          ns.write(filePath, JSON.stringify(passwords, null, 4), "w", "home");
+          ns.print(`Password Updated (${hostname})`);
+        }
+      } catch (e) {
+        ns.print(`ERROR:\t ${e.message}`);
+      }
+    }
+
+    await ns.sleep(100);
+  }
+}
+async function darknetServer(ns, hostname) {
+  const myFiles = ns.ls("home");
+  const files = ns.ls(hostname);
+
+  for (const file of files) {
+    if (file.endsWith(".cache")) {
+      ns.dnet.openCache(file);
       continue;
     }
 
-    const files = ns.ls(hostname);
-
-    for (const file of files) {
-      if (file.endsWith(".cache")) {
-        ns.dnet.openCache(file);
-        continue;
-      }
-
-      if (
-        !myFiles.includes(file) &&
-        !file.endsWith(".exe") &&
-        !file.endsWith(".cct")
-      ) {
-        if (ns.scp(file, "home")) ns.tprint(`Transferred: ${file}`);
-      }
+    if (
+      !myFiles.includes(file) &&
+      !file.endsWith(".exe") &&
+      !file.endsWith(".cct")
+    ) {
+      if (ns.scp(file, "home")) ns.tprint(`Transferred: ${file}`);
     }
-
-    await ns.dnet.memoryReallocation();
-    await ns.dnet.phishingAttack();
-    await ns.sleep(5000);
   }
+
+  await ns.dnet.memoryReallocation();
+  await ns.dnet.phishingAttack();
 }
 
 /**
@@ -166,25 +224,20 @@ const tryPassword = async (ns, hostname, password) => {
       model: ns.dnet.getServerAuthDetails(hostname).modelId,
     };
 
-    try {
-      const filePath = "passwords.json";
-      const raw = ns.read(filePath, "home");
-      const passwords = JSON.parse(raw);
-
-      if (!Array.isArray(passwords.known)) passwords.known = [];
-
-      passwords.known.push(data);
-      ns.write(filePath, JSON.stringify(passwords, null, 4), "w", "home");
-      ns.print(
-        `Successfully wrote data to passwords.json -> known: ${hostname}`,
-      );
-
-      return true;
-    } catch (e) {
-      ns.print(`Failed to write password data for ${hostname}: ${e}`);
-    }
+    pushDataToPort(ns, data, ns.getPortHandle(port));
+    return true;
   }
   return false;
+};
+const pushDataToPort = (ns, data, handle) => {
+  if (handle.full()) {
+    ns.print("ERROR\tUnable to push data. Port is full!");
+    return;
+  }
+
+  const dataStr = JSON.stringify(data);
+  ns.print(`INFO\tPUSHED data to port: ${dataStr}.`);
+  handle.write(dataStr);
 };
 
 // Model Specific Parsers
@@ -233,7 +286,7 @@ const PHP = async (ns, hostname, details) => {
     for (let j = 0; j < permutations[i].length; j++) {
       temp += num[permutations[i][j]];
     }
-    return await tryPassword(ns, hostname, temp);
+    if (await tryPassword(ns, hostname, temp)) return true;
   }
   return false;
 };
@@ -280,26 +333,18 @@ const bellaCuore = async (ns, hostname, details) => {
   return await tryPassword(ns, hostname, password.toString());
 };
 const freshInstall = async (ns, hostname, details) => {
-  const rawData = ns.read("passwords.json", "home");
-  if (rawData) {
-    try {
-      const data = JSON.parse(rawData);
-      for (const key in data.default) {
-        return await tryPassword(ns, hostname, data.default[key]);
-      }
-    } catch (e) {}
+  const passwords = [`admin`, `password`, `0000`, `12345`];
+
+  for (const key in passwords) {
+    if (await tryPassword(ns, hostname, passwords[key])) return true;
   }
   return false;
 };
 const laika4 = async (ns, hostname, details) => {
-  const rawData = ns.read("passwords.json", "home");
-  if (rawData) {
-    try {
-      const data = JSON.parse(rawData);
-      for (const key in data.dogNames) {
-        return await tryPassword(ns, hostname, data.dogNames[key]);
-      }
-    } catch (e) {}
+  const dogNames = ["fido", "spot", "rover", "max"];
+
+  for (const key in dogNames) {
+    if (await tryPassword(ns, hostname, dogNames[key])) return true;
   }
   return false;
 };
@@ -377,36 +422,37 @@ const nil = async (ns, hostname, details) => {
 
   if (!Number.isFinite(length) || length <= 0 || !alphabet) return false;
 
-  const filler = alphabet[0];
-  const solved = Array(length).fill(filler);
+  const solved = Array(length).fill(null);
+  let solvedCount = 0;
 
-  for (let i = 0; i < length; i++) {
-    let found = false;
+  for (const char of alphabet) {
+    const guess = solved
+      .map((value) => (value === null ? char : value))
+      .join("");
 
-    for (const char of alphabet) {
-      solved[i] = char;
-      const guess = solved.join("");
-      const feedback = await getFeedback(
-        ns,
-        hostname,
-        guess,
-        parseNilFeedbackData,
-        (effort) => ({ matches: Array(effort.length).fill(true) }),
-      );
+    const feedback = await getFeedback(
+      ns,
+      hostname,
+      guess,
+      parseNilFeedbackData,
+      (effort) => ({ matches: Array(effort.length).fill(true) }),
+    );
 
-      if (!feedback) continue;
-      if (feedback.success) return true;
+    if (!feedback) continue;
+    if (feedback.success) return true;
 
-      if (feedback.matches[i]) {
-        found = true;
-        break;
+    for (let i = 0; i < Math.min(feedback.matches.length, length); i++) {
+      if (feedback.matches[i] && solved[i] === null) {
+        solved[i] = char;
+        solvedCount += 1;
       }
     }
 
-    if (!found) return false;
+    if (solvedCount === length) break;
   }
 
-  return await ns.dnet.authenticate(hostname, solved.join(""));
+  if (solvedCount !== length) return false;
+  return await tryPassword(ns, hostname, solved.join(""));
 };
 
 // Unfinished Solvers
