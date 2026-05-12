@@ -493,20 +493,6 @@ const accountsManager = async (ns, hostname, details) => {
     if (await tryPassword(ns, hostname, i.toString())) return true;
   }
 };
-const openWebAccessPoint = async (ns, hostname, details) => {
-  const feedback = await getFeedback(ns, hostname, "Test", (effort) => ({
-    hint: effort[0],
-  }));
-
-  if (!feedback) return false;
-
-  const arr = feedback.raw.data.split(" ");
-  let guess = arr.find((item) => new RegExp(hostname).test(item)).split(":")[1];
-
-  if (await tryPassword(ns, hostname, guess)) return true;
-
-  return false;
-};
 const factoriOs = async (ns, hostname, details) => {
   const length = details.passwordLength;
   let divisibleBy = [];
@@ -542,6 +528,23 @@ const factoriOs = async (ns, hostname, details) => {
   for (const num of possible) {
     if (await tryPassword(ns, hostname, num.toString())) return true;
   }
+
+  return false;
+};
+const openWebAccessPoint = async (ns, hostname, details) => {
+  const feedback = await getFeedback(ns, hostname, "Test", (effort) => ({
+    hint: effort[0],
+  }));
+
+  if (!feedback) return false;
+
+  const arr = feedback.raw.data.split(" ");
+  let guess = arr
+    .find((item) => new RegExp(hostname).test(item))
+    .split(":")
+    .at(-1);
+
+  if (await tryPassword(ns, hostname, guess)) return true;
 
   return false;
 };

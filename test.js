@@ -1,12 +1,27 @@
-// an array of 1 -100
-let length = 3;
-let min = 10 ** (length - 1);
-let max = 10 ** length - 1;
-let arr = Array.from({ length: max - min + 1 }, (_, i) => i + min);
+let guess = [
+  "45455",
+  "There's",
+  "definitely",
+  "a",
+  "1",
+  "and",
+  "a",
+  "4...78187936969",
+  "meta::watchdog_security:94811",
+  "98765432130621",
+  "I",
+  "need",
+  "to",
+  "remember",
+  "8",
+  "'n",
+  "9.5581598841qaz2wsx121212131313password",
+  "I",
+  "need",
+  "to",
+  "remember",
+  "4",
+  "'n",
+  "8.",
+];
 
-
-for (let i = 2; i < length; i++) {
-  const isDivisible = true;
-
-  console.log(`Divisible By ${i}:\t${isDivisible}\t`);
-}
