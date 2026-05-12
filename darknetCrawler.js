@@ -493,6 +493,42 @@ const accountsManager = async (ns, hostname, details) => {
     if (await tryPassword(ns, hostname, i.toString())) return true;
   }
 };
+const openWebAccessPoint = async (ns, hostname, details) => {
+  const feedback = await getFeedback(ns, hostname, "Test", (effort) => ({
+    hint: effort[0],
+  }));
+
+  if (!feedback) return false;
+
+  if (feedback.success) return true;
+
+  const source = [
+    feedback.raw?.data,
+    details?.data,
+    details?.passwordHint,
+  ].find((value) => typeof value === "string" && value.length > 0);
+  if (!source) return false;
+
+  const tokens = source.split(/\s+/);
+  const hostToken = tokens.find(
+    (item) => item.includes(hostname) && item.includes(":"),
+  );
+
+  let guess = hostToken?.split(":").at(-1);
+  if (!guess) {
+    const escapedHost = hostname.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const match = source.match(
+      new RegExp(`${escapedHost}\\s*[:=]\\s*([^\\s,;]+)`),
+    );
+    guess = match?.[1];
+  }
+
+  if (!guess) return false;
+
+  if (await tryPassword(ns, hostname, guess)) return true;
+
+  return false;
+};
 const factoriOs = async (ns, hostname, details) => {
   const length = details.passwordLength;
   let divisibleBy = [];
@@ -500,7 +536,19 @@ const factoriOs = async (ns, hostname, details) => {
   let max = 10 ** length - 1;
   let possible = Array.from({ length: max - min + 1 }, (_, i) => i + min);
 
+  const isPrime = (num) => {
+    if (num <= 1) return false;
+    if (num <= 3) return true;
+    if (num % 2 === 0 || num % 3 === 0) return false;
+    for (let i = 5; i * i <= num; i += 6) {
+      if (num % i === 0 || num % (i + 2) === 0) return false;
+    }
+    return true;
+  };
+
   for (let num = 2; num < possible.length; num++) {
+    if (isPrime(num)) continue;
+
     const feedback = await getFeedback(
       ns,
       hostname,
@@ -527,23 +575,6 @@ const factoriOs = async (ns, hostname, details) => {
   for (const num of possible) {
     if (await tryPassword(ns, hostname, num.toString())) return true;
   }
-
-  return false;
-};
-const openWebAccessPoint = async (ns, hostname, details) => {
-  const feedback = await getFeedback(ns, hostname, "Test", (effort) => ({
-    hint: effort[0],
-  }));
-
-  if (!feedback) return false;
-
-  const arr = feedback.raw.data.split(" ");
-  let guess = arr
-    .find((item) => new RegExp(hostname).test(item))
-    .split(":")
-    .at(-1);
-
-  if (await tryPassword(ns, hostname, guess)) return true;
 
   return false;
 };
