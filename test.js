@@ -1,14 +1,12 @@
-/** @param {NS} ns */
-export async function main(ns) {
-  ns.disableLog("ALL");
+// an array of 1 -100
+let length = 3;
+let min = 10 ** (length - 1);
+let max = 10 ** length - 1;
+let arr = Array.from({ length: max - min + 1 }, (_, i) => i + min);
 
-  while (1) {
-    const data1 = ns.readPort(1);
-    const data2 = ns.readPort(2);
 
-    if (data1) ns.tprint(`Port 1 (Write): ${data1}`);
-    if (data2) ns.tprint(`Port 2 (TryWrite): ${data2}`);
+for (let i = 2; i < length; i++) {
+  const isDivisible = true;
 
-    await ns.sleep(1000);
-  }
+  console.log(`Divisible By ${i}:\t${isDivisible}\t`);
 }

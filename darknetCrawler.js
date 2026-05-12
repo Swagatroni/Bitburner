@@ -4,6 +4,10 @@ const port = 1;
 export async function main(ns) {
   ns.disableLog("ALL");
 
+  while (!ns.singularity.purchaseProgram("DarkscapeNavigator.exe")) {
+    await ns.sleep(1000);
+  }
+
   while (true) {
     const scriptName = ns.getScriptName();
     const nearbyServers = ns.dnet.probe();
@@ -59,17 +63,17 @@ async function homeServer(ns, hostname) {
         if (!Array.isArray(passwords.known)) passwords.known = [];
 
         const serverData = passwords.known.find(
-          (entry) => entry.server === hostname,
+          (entry) => entry.server === data.server,
         );
 
         if (!serverData) {
           passwords.known.push(data);
           ns.write(filePath, JSON.stringify(passwords, null, 4), "w", "home");
-          ns.print(`New password added (${hostname})`);
+          ns.print(`New password added (${data.server})`);
         } else if (serverData.password !== data.password) {
           serverData.password = data.password;
           ns.write(filePath, JSON.stringify(passwords, null, 4), "w", "home");
-          ns.print(`Password Updated (${hostname})`);
+          ns.print(`Password Updated (${data.server})`);
         }
       } catch (e) {
         ns.print(`ERROR:\t ${e.message}`);
@@ -176,30 +180,7 @@ const getCharset = (passwordFormat) => {
       return "";
   }
 };
-const parseFeedback = (logs, attemptedPassword, parser) => {
-  if (!Array.isArray(logs)) return null;
-
-  for (const line of logs) {
-    if (typeof line !== "string") continue;
-
-    try {
-      const parsed = JSON.parse(line);
-      if (!parsed || parsed.passwordAttempted !== attemptedPassword) continue;
-
-      const feedback = parser(parsed.data, parsed);
-      if (feedback) return feedback;
-    } catch (e) {}
-  }
-
-  return null;
-};
-const getFeedback = async (
-  ns,
-  hostname,
-  attemptedPassword,
-  parser,
-  successFactory,
-) => {
+const getFeedback = async (ns, hostname, attemptedPassword, successFactory) => {
   for (let i = 0; i < 3; i++) {
     const result = await ns.dnet.authenticate(hostname, attemptedPassword);
     if (result.success)
@@ -209,8 +190,8 @@ const getFeedback = async (
       };
 
     const heartbleed = await ns.dnet.heartbleed(hostname, { logsToCapture: 6 });
-    const feedback = parseFeedback(heartbleed.logs, attemptedPassword, parser);
-    if (feedback) return { success: false, ...feedback };
+    const feedback = parseFeedback(heartbleed.logs, attemptedPassword);
+    if (feedback) return { success: false, raw: feedback };
   }
 
   return null;
@@ -240,20 +221,34 @@ const pushDataToPort = (ns, data, handle) => {
   handle.write(dataStr);
 };
 
-// Model Specific Parsers
-const parseDeepGreenFeedbackData = (data) => {
-  const [exactRaw, misplacedRaw] = String(data ?? "").split(",");
-  const exact = Number(exactRaw);
-  const misplaced = Number(misplacedRaw);
-  if (!Number.isFinite(exact) || !Number.isFinite(misplaced)) return null;
-  return { exact, misplaced };
-};
-const parseNilFeedbackData = (data) => {
-  const matches = String(data ?? "")
-    .split(",")
-    .map((value) => value.trim() === "yes");
-  if (matches.length === 0) return null;
-  return { matches };
+// Parsers
+const parseFeedback = (logs, attemptedPassword) => {
+  if (!Array.isArray(logs)) return null;
+
+  for (const line of logs) {
+    let parsed = null;
+
+    if (typeof line === "string") {
+      try {
+        parsed = JSON.parse(line);
+      } catch (e) {
+        continue;
+      }
+    } else if (line && typeof line === "object") {
+      parsed = line;
+    }
+
+    if (!parsed) continue;
+
+    const attempted = String(attemptedPassword ?? "");
+    const loggedAttempt = String(parsed.passwordAttempted ?? "");
+
+    if (loggedAttempt === attempted || loggedAttempt.startsWith(attempted)) {
+      return parsed;
+    }
+  }
+
+  return null;
 };
 
 // Model Specific Solvers
@@ -352,20 +347,28 @@ const deepGreen = async (ns, hostname, details) => {
   const length = details.passwordLength;
   const alphabet = getCharset(details.passwordFormat);
 
+  const parseData = (data) => {
+    const [exactRaw, misplacedRaw] = String(data ?? "").split(",");
+    const exact = Number(exactRaw);
+    const misplaced = Number(misplacedRaw);
+    if (!Number.isFinite(exact) || !Number.isFinite(misplaced)) return null;
+    return { exact, misplaced };
+  };
+
   const counts = new Map();
   for (const char of alphabet) {
     const guess = char.repeat(length);
-    const feedback = await getFeedback(
-      ns,
-      hostname,
-      guess,
-      parseDeepGreenFeedbackData,
-      (effort) => ({ exact: effort.length, misplaced: 0 }),
-    );
+    const feedback = await getFeedback(ns, hostname, guess, (effort) => ({
+      exact: effort.length,
+      misplaced: 0,
+    }));
     if (!feedback) continue;
     if (feedback.success) return true;
 
-    const count = feedback.exact + feedback.misplaced;
+    const parsed = parseData(feedback.raw?.data);
+    if (!parsed) continue;
+
+    const count = parsed.exact + parsed.misplaced;
     if (count > 0) counts.set(char, count);
   }
 
@@ -397,13 +400,15 @@ const deepGreen = async (ns, hostname, details) => {
         ns,
         hostname,
         guess.join(""),
-        parseDeepGreenFeedbackData,
         (effort) => ({ exact: effort.length, misplaced: 0 }),
       );
       if (!feedback) continue;
       if (feedback.success) return true;
 
-      if (feedback.exact > exactFixed) {
+      const parsed = parseData(feedback.raw?.data);
+      if (!parsed) continue;
+
+      if (parsed.exact > exactFixed) {
         solved[i] = char;
         exactFixed += 1;
         remaining -= 1;
@@ -430,19 +435,26 @@ const nil = async (ns, hostname, details) => {
       .map((value) => (value === null ? char : value))
       .join("");
 
-    const feedback = await getFeedback(
-      ns,
-      hostname,
-      guess,
-      parseNilFeedbackData,
-      (effort) => ({ matches: Array(effort.length).fill(true) }),
-    );
+    const feedback = await getFeedback(ns, hostname, guess, (effort) => ({
+      matches: Array(effort.length).fill(true),
+    }));
 
     if (!feedback) continue;
     if (feedback.success) return true;
 
-    for (let i = 0; i < Math.min(feedback.matches.length, length); i++) {
-      if (feedback.matches[i] && solved[i] === null) {
+    const parseData = (data) => {
+      const matches = String(data ?? "")
+        .split(",")
+        .map((value) => value.trim() === "yes");
+      if (matches.length === 0) return null;
+      return { matches };
+    };
+
+    const parsed = parseData(feedback.raw?.data);
+    if (!parsed) continue;
+
+    for (let i = 0; i < Math.min(parsed.matches.length, length); i++) {
+      if (parsed.matches[i] && solved[i] === null) {
         solved[i] = char;
         solvedCount += 1;
       }
@@ -454,17 +466,87 @@ const nil = async (ns, hostname, details) => {
   if (solvedCount !== length) return false;
   return await tryPassword(ns, hostname, solved.join(""));
 };
-
-// Unfinished Solvers
 const accountsManager = async (ns, hostname, details) => {
+  let min = 0;
+  let max = 100;
+
+  while (min < max) {
+    let guess = Math.floor((min + max) / 2);
+
+    const feedback = await getFeedback(
+      ns,
+      hostname,
+      guess.toString(),
+      (effort) => ({ hint: effort[0] }),
+    );
+
+    if (!feedback) return false;
+
+    try {
+      const hint = feedback.raw.data;
+      if (hint === "Lower") max = guess;
+      else if (hint === "Higher") min = guess;
+    } catch (e) {}
+  }
+
+  for (let i = min - 1; i <= max + 1; i++) {
+    if (await tryPassword(ns, hostname, i.toString())) return true;
+  }
+};
+const openWebAccessPoint = async (ns, hostname, details) => {
+  const feedback = await getFeedback(ns, hostname, "Test", (effort) => ({
+    hint: effort[0],
+  }));
+
+  if (!feedback) return false;
+
+  const arr = feedback.raw.data.split(" ");
+  let guess = arr.find((item) => new RegExp(hostname).test(item)).split(":")[1];
+
+  if (await tryPassword(ns, hostname, guess)) return true;
+
   return false;
 };
 const factoriOs = async (ns, hostname, details) => {
+  const length = details.passwordLength;
+  let divisibleBy = [];
+  let min = 10 ** (length - 1);
+  let max = 10 ** length - 1;
+  let possible = Array.from({ length: max - min + 1 }, (_, i) => i + min);
+
+  for (let num = 2; num < possible.length; num++) {
+    const feedback = await getFeedback(
+      ns,
+      hostname,
+      num.toString(),
+      (effort) => ({ hint: effort[0] }),
+    );
+
+    if (!feedback) continue;
+
+    try {
+      const isDivisible = JSON.parse(feedback.raw.data);
+
+      if (isDivisible) {
+        divisibleBy.push(num);
+        possible = possible.filter((x) => x % num === 0);
+      } else possible = possible.filter((x) => x % num !== 0);
+
+      ns.tprint(`${hostname}: ${num} | ${isDivisible}`);
+      if (possible.length <= 10) break;
+    } catch (e) {}
+
+    await ns.sleep(500);
+  }
+
+  for (const num of possible) {
+    if (await tryPassword(ns, hostname, num.toString())) return true;
+  }
+
   return false;
 };
+
+// Unfinished Solvers
 const pr0verFl0 = async (ns, hostname, details) => {
-  return false;
-};
-const openWebAccessPoint = async (ns, hostname, details) => {
   return false;
 };

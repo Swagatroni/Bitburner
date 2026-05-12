@@ -2,6 +2,39 @@ test = {
   isOnline: true,
   isConnectedToCurrentServer: true,
   hasSession: false,
+  modelId: "OctantVoxel",
+  passwordHint: "the password is the base 6 number 1203 in base 10",
+  data: "6,1203",
+  logTrafficInterval: 20.683,
+  passwordLength: 3,
+  passwordFormat: "numeric",
+};
+test = {
+  isOnline: true,
+  isConnectedToCurrentServer: true,
+  hasSession: false,
+  modelId: "PHP 5.4",
+  passwordHint: "The password is shuffled 028",
+  data: "028",
+  logTrafficInterval: 22.870000000000005,
+  passwordLength: 3,
+  passwordFormat: "numeric",
+};
+test = {
+  isOnline: true,
+  isConnectedToCurrentServer: true,
+  hasSession: false,
+  modelId: "FreshInstall_1.0",
+  passwordHint: "It's still the factory settings",
+  data: "",
+  logTrafficInterval: 31,
+  passwordLength: 5,
+  passwordFormat: "numeric",
+};
+test = {
+  isOnline: true,
+  isConnectedToCurrentServer: true,
+  hasSession: false,
   modelId: "Pr0verFl0",
   passwordHint: "Warning: password buffer is 5 bytes",
   data: "",
@@ -13,24 +46,10 @@ test = {
   isOnline: true,
   isConnectedToCurrentServer: true,
   hasSession: false,
-  modelId: "OpenWebAccessPoint",
-  passwordHint: "(I'm busy browsing social media at the cafe)",
-  data: "",
-  logTrafficInterval: 20.683,
-  passwordLength: 4,
-  passwordFormat: "numeric",
-};
-test = {
-  isOnline: true,
-  isConnectedToCurrentServer: true,
-  hasSession: false,
-  modelId: "NIL",
-  passwordHint: "you are one who's'nt authorized",
+  modelId: "AccountsManager_4.2",
+  passwordHint: "The password is a number between 0 and 100",
   data: "",
   logTrafficInterval: 22.870000000000005,
-  passwordLength: 5,
+  passwordLength: 2,
   passwordFormat: "numeric",
-message: that wasn't right
-data: yesn't,yesn't,yesn't,yesn't,yesn't,yesn't
-passwordAttempted: 000000
-code: 401};
+};
