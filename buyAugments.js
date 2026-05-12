@@ -6,8 +6,6 @@ export async function main(ns) {
   const augLimit = 3;
 
   if (!ns.isRunning("GOD-EYE.js")) ns.exec("GOD-EYE.js", "home");
-  ns.exec("hashUpgrade.js", "home", 1, "research");
-  // ns.exec("hashUpgrade.js", "home", 1, "corp");
 
   function getAugs() {
     const sing = ns.singularity;
@@ -51,8 +49,11 @@ export async function main(ns) {
     const toBeInstalled = all.filter((aug) => !installed.includes(aug));
 
     if (augs.length === 0) break; // No augs to buy, exit loop
-    if (toBeInstalled.length >= augLimit)
+    if (toBeInstalled.length >= augLimit) {
+      ns.exec("NeuroFlux.js", "home", 1, "");
+      await ns.sleep(3000);
       ns.singularity.installAugmentations(callbackScript);
+    }
 
     // For each aug:
     for (const aug of augs) {

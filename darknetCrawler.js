@@ -518,7 +518,6 @@ const factoriOs = async (ns, hostname, details) => {
         possible = possible.filter((x) => x % num === 0);
       } else possible = possible.filter((x) => x % num !== 0);
 
-      ns.tprint(`${hostname}: ${num} | ${isDivisible}`);
       if (possible.length <= 10) break;
     } catch (e) {}
 
