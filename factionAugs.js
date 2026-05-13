@@ -4,6 +4,16 @@ export async function main(ns) {
   ns.ui.openTail();
   const search = null;
 
+  const printFactions = (factions) => {
+    ns.print("Factions and Augmentations:");
+    for (const faction of factions) {
+      ns.print("  ");
+      ns.print(`${faction.name}:`);
+      ns.print(` - ${faction.numAugs} Augmentations`);
+      ns.print(` - Rep Gap: ${ns.format.number(faction.repGap)}`);
+    }
+  };
+
   while (true) {
     const factions = getFactionsAugs(ns);
 
@@ -27,20 +37,6 @@ export async function main(ns) {
 
     printFactions(factions);
     await ns.sleep(5000);
-  }
-
-  function printFactions(factions) {
-    ns.print("Factions and Augmentations:");
-    for (const faction of factions) {
-      ns.print("  ");
-      ns.print(`${faction.name}:`);
-      ns.print(` - ${faction.numAugs} Augmentations`);
-      if (faction.repGap > 0) {
-        ns.print(` - Rep Required: ${ns.format.number(faction.repReq)}`);
-        ns.print(` - Current Rep: ${ns.format.number(faction.currRep)}`);
-      }
-      ns.print(` - Rep Gap: ${ns.format.number(faction.repGap)}`);
-    }
   }
 }
 
