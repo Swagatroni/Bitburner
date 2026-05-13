@@ -9,8 +9,9 @@ export async function main(ns) {
     for (const faction of factions) {
       ns.print("  ");
       ns.print(`${faction.name}:`);
-      ns.print(` - ${faction.numAugs} Augmentations`);
-      ns.print(` - Rep Gap: ${ns.format.number(faction.repGap)}`);
+      ns.print(
+        ` - Augs: ${faction.numAugs} | Rep Gap: ${ns.format.number(faction.repGap)}`,
+      );
     }
   };
 
@@ -29,14 +30,14 @@ export async function main(ns) {
       }
     }
 
-    let bestFaction = factions[0];
-    if (bestFaction.name === "Bladeburners") bestFaction = factions[1];
+    const bestFaction = factions.find((faction) => faction.repGap > 0);
+
     if (bestFaction) {
       ns.singularity.workForFaction(bestFaction.name, "field", false);
     }
 
     printFactions(factions);
-    await ns.sleep(5000);
+    await ns.sleep(1000);
   }
 }
 
