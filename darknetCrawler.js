@@ -109,7 +109,6 @@ async function darknetServer(ns, hostname) {
         ns.toast(`Unleashing Storm Seed in ${i}...`);
         await ns.sleep(1000);
       }
-      ns.tprint(JSON.parse(ns.dnet.unleashStormSeed()));
     }
   }
 

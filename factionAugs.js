@@ -19,8 +19,14 @@ export async function main(ns) {
       }
     }
 
+    let bestFaction = factions[0];
+    if (bestFaction.name === "Bladeburners") bestFaction = factions[1];
+    if (bestFaction) {
+      ns.singularity.workForFaction(bestFaction.name, "field", false);
+    }
+
     printFactions(factions);
-    await ns.sleep(1000);
+    await ns.sleep(5000);
   }
 
   function printFactions(factions) {
