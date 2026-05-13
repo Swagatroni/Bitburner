@@ -67,9 +67,7 @@ export async function main(ns) {
     spareScripts: false,
   };
 
-  function money() {
-    return ns.getServerMoneyAvailable("home");
-  }
+  const money = () => ns.getServerMoneyAvailable("home");
 
   while (true) {
     if (torPurchased(ns, money())) done.torPurchased = true;
@@ -98,6 +96,16 @@ export async function main(ns) {
       break;
     }
 
+    const invites = ns.singularity.checkFactionInvitations();
+    invites.forEach((f) => {
+      try {
+        if (ns.singularity.getFactionEnemies(f).length === 0) {
+          ns.singularity.joinFaction(f);
+          ns.tprint(`Joined faction: ${f}`);
+        }
+      } catch (e) {}
+    });
+
     await ns.sleep(5000);
   }
 }
@@ -118,7 +126,6 @@ function torPurchased(ns, money) {
 
   return false;
 }
-
 async function runscript(ns, script, server) {
   if (ns.isRunning(script.name, server.name)) return true;
 
@@ -150,7 +157,6 @@ async function runscript(ns, script, server) {
   ns.tprint(`Started ${script.name} on ${server.name}`);
   return true;
 }
-
 async function manageCorpScripts(ns, server) {
   const hasCorp = ns.corporation.hasCorporation();
   const desiredScript = hasCorp ? "corp-scale.js" : "corp-floor.js";
@@ -165,7 +171,6 @@ async function manageCorpScripts(ns, server) {
     await runscript(ns, { name: desiredScript, threads: 1, args: [] }, server);
   }
 }
-
 function getTotalRam(ns, grouping) {
   if (grouping.name === "2-SpareServer") {
     return Math.max(
@@ -179,14 +184,12 @@ function getTotalRam(ns, grouping) {
   }
   return total;
 }
-
 function hasEnoughRam(ns, grouping) {
   return (
     ns.serverExists(grouping.name) &&
     ns.getServerMaxRam(grouping.name) >= grouping.totalRam
   );
 }
-
 async function startServerScripts(ns, servers) {
   let allStarted = true;
 

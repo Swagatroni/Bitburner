@@ -239,13 +239,6 @@ export async function handleBackdoors(ns) {
     { server: "run4theh111z", faction: "BitRunners" },
   ];
 
-  // for (const server of targets) {
-  //   const s = ns.getServer(server.server);
-  //   if (!s.backdoorInstalled) break;
-
-  //   return true;
-  // }
-
   for (const { server, faction } of targets) {
     if (!ns.serverExists(server)) continue;
 
@@ -263,12 +256,6 @@ export async function handleBackdoors(ns) {
       );
       await ns.exec("Curtain/search.js", "home", 1, server);
       await ns.sleep(2000);
-      try {
-        await ns.singularity.joinFaction(faction);
-        ns.tprint(`Joined faction: ${faction}`);
-      } catch (e) {
-        ns.tprint(`Failed to join faction: ${faction}`);
-      }
     }
   }
 

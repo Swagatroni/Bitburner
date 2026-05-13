@@ -1,5 +1,6 @@
 /** @param {NS} ns */
-const port = 1;
+const PORT = 1;
+const UNLEASH_STORM = true;
 
 export async function main(ns) {
   ns.disableLog("ALL");
@@ -50,7 +51,7 @@ export async function main(ns) {
 
 async function homeServer(ns, hostname) {
   while (true) {
-    const receiverPort = ns.getPortHandle(port);
+    const receiverPort = ns.getPortHandle(PORT);
     if (!receiverPort.empty()) {
       try {
         const msg = receiverPort.read();
@@ -89,7 +90,7 @@ async function darknetServer(ns, hostname) {
 
   for (const file of files) {
     if (file.endsWith(".cache")) {
-      ns.dnet.openCache(file);
+      ns.dnet.openCache(file, true);
       continue;
     }
 
@@ -102,6 +103,16 @@ async function darknetServer(ns, hostname) {
     }
   }
 
+  if (UNLEASH_STORM) {
+    if (files.some((file) => file.endsWith(".exe"))) {
+      for (let i = 5; i > 0; i--) {
+        ns.toast(`Unleashing Storm Seed in ${i}...`);
+        await ns.sleep(1000);
+      }
+      ns.tprint(JSON.parse(ns.dnet.unleashStormSeed()));
+    }
+  }
+
   await ns.dnet.memoryReallocation();
   await ns.dnet.phishingAttack();
 }
@@ -110,8 +121,9 @@ async function darknetServer(ns, hostname) {
  * @param {NS} ns
  * @param {string} hostname
  * @param {string} scriptName
+ * @param {boolean} unleashStorm
  */
-const deployCrawler = async (ns, hostname, scriptName) => {
+const deployCrawler = async (ns, hostname, scriptName, unleashStorm) => {
   const copied = await ns.scp([scriptName, "passwords.json"], hostname);
   if (!copied) return false;
 
@@ -205,7 +217,7 @@ const tryPassword = async (ns, hostname, password) => {
       model: ns.dnet.getServerAuthDetails(hostname).modelId,
     };
 
-    pushDataToPort(ns, data, ns.getPortHandle(port));
+    pushDataToPort(ns, data, ns.getPortHandle(PORT));
     return true;
   }
   return false;

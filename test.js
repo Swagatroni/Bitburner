@@ -1,27 +1,13 @@
-let guess = [
-  "45455",
-  "There's",
-  "definitely",
-  "a",
-  "1",
-  "and",
-  "a",
-  "4...78187936969",
-  "meta::watchdog_security:94811",
-  "98765432130621",
-  "I",
-  "need",
-  "to",
-  "remember",
-  "8",
-  "'n",
-  "9.5581598841qaz2wsx121212131313password",
-  "I",
-  "need",
-  "to",
-  "remember",
-  "4",
-  "'n",
-  "8.",
-];
+/** @param {NS} ns */
+export async function main(ns) {
+  ns.disableLog("ALL");
 
+  const invites = ns.singularity.checkFactionInvitations();
+  invites.forEach((f) => {
+    try {
+      if (ns.singularity.getFactionEnemies(f).length === 0) {
+        ns.singularity.joinFaction(f);
+      }
+    } catch (e) {}
+  });
+}
