@@ -3,8 +3,10 @@ export async function main(ns) {
   ns.disableLog("ALL");
   ns.ui.openTail();
   const search = null;
+  const factionWorkTypes = ["hacking", "field", "security"];
 
   const printFactions = (factions) => {
+    ns.clearLog();
     ns.print("Factions and Augmentations:");
     for (const faction of factions) {
       ns.print("  ");
@@ -33,7 +35,20 @@ export async function main(ns) {
     const bestFaction = factions.find((faction) => faction.repGap > 0);
 
     if (bestFaction) {
-      ns.singularity.workForFaction(bestFaction.name, "field", false);
+      let started = false;
+
+      for (const workType of factionWorkTypes) {
+        if (ns.singularity.workForFaction(bestFaction.name, workType, false)) {
+          started = true;
+          break;
+        }
+      }
+
+      if (!started) {
+        ns.print(`Unable to start faction work for ${bestFaction.name}`);
+      }
+    } else {
+      ns.singularity.stopAction();
     }
 
     printFactions(factions);

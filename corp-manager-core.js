@@ -58,20 +58,20 @@ export async function runCorpManager(ns, mode = "floor") {
     const info = CORP.getDivision(divisionName);
     let outputs = [];
     try {
-      outputs = CORP.getIndustryData(info.type).producedMaterials || [];
+      outputs = CORP.getIndustryData(info.industry).producedMaterials || [];
     } catch (_) {
       outputs = info.producedMaterials || [];
     }
 
     const [hardware, robots, aiCores, realEstate] = INDUSTRY_BONUS_WEIGHTS[
-      info.type
+      info.industry
     ] || [1, 1, 1, 1];
     const sum = hardware + robots + aiCores + realEstate;
     const hasBonusMaterialTargets = sum > 0;
 
     return {
       Name: divisionName,
-      Industry: info.type,
+      Industry: info.industry,
       Outputs: outputs,
       HardwarePercent: hasBonusMaterialTargets ? hardware / sum : 0,
       RobotsPercent: hasBonusMaterialTargets ? robots / sum : 0,
